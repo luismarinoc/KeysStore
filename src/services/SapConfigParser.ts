@@ -7,17 +7,20 @@ export interface SapSystem {
     server: string;
     routerid?: string;
     instance?: string;
+    memo?: string;
 }
 
 export interface ParsedProject {
     name: string;
     systems: SapSystem[];
+    memo?: string;
 }
 
 export const parseSapConfig = (xmlContent: string): ParsedProject[] => {
     const parser = new XMLParser({
         ignoreAttributes: false,
         attributeNamePrefix: '',
+        textNodeName: 'value', // To capture text content of tags like Memo
     });
 
     try {
@@ -27,6 +30,20 @@ export const parseSapConfig = (xmlContent: string): ParsedProject[] => {
         if (!landscape) {
             console.warn('[SAP PARSER] No Landscape found in SAP XML');
             return [];
+        }
+
+        // Extract Routers section
+        const routersSection = landscape?.Routers?.Router;
+        const routersMap: Record<string, string> = {};
+
+        if (routersSection) {
+            const routerList = Array.isArray(routersSection) ? routersSection : [routersSection];
+            routerList.forEach((router: any) => {
+                if (router.uuid && router.router) {
+                    routersMap[router.uuid.trim()] = router.router;
+                }
+            });
+            console.log(`[SAP PARSER] Found ${Object.keys(routersMap).length} Routers`);
         }
 
         // Extract Services section - this is where the actual SAPGUI connection details are
@@ -43,7 +60,7 @@ export const parseSapConfig = (xmlContent: string): ParsedProject[] => {
         const servicesMap: Record<string, any> = {};
         serviceList.forEach((service: any) => {
             if (service.type === 'SAPGUI' && service.uuid) {
-                servicesMap[service.uuid] = service;
+                servicesMap[service.uuid.trim()] = service;
             }
         });
 
@@ -61,6 +78,16 @@ export const parseSapConfig = (xmlContent: string): ParsedProject[] => {
 
         const projects: ParsedProject[] = [];
 
+        // Helper to extract text from potential object with attributes
+        const extractText = (obj: any): string => {
+            if (!obj) return '';
+            if (Array.isArray(obj)) {
+                return obj.map(item => extractText(item)).join('\n\n');
+            }
+            if (typeof obj === 'string') return obj;
+            return obj.value || obj['#text'] || obj['#value'] || obj._text || obj.text || '';
+        };
+
         workspaceList.forEach((workspace: any) => {
             // Get all children of workspace (Nodes and Items)
             const workspaceChildren = workspace.Node;
@@ -76,11 +103,18 @@ export const parseSapConfig = (xmlContent: string): ParsedProject[] => {
             nodeList.forEach((node: any) => {
                 const projectName = node.name || 'Unnamed Project';
 
+                // Extract Project-Level Memo (Node Memo)
+                let projectMemo = '';
+                if (node.Memo) {
+                    console.log(`[SAP PARSER] Found Memo in Node "${projectName}":`, JSON.stringify(node.Memo));
+                    projectMemo = extractText(node.Memo);
+                }
+
                 // Get Items within this Node - these reference Services
                 const items = node.Item;
 
                 if (!items) {
-                    console.log(`[SAP PARSER] Node "${projectName}" has no Items, skipping`);
+                    // console.log(`[SAP PARSER] Node "${projectName}" has no Items, skipping`);
                     return;
                 }
 
@@ -93,23 +127,74 @@ export const parseSapConfig = (xmlContent: string): ParsedProject[] => {
                 itemList.forEach((item: any) => {
                     const serviceId = item.serviceid;
                     if (!serviceId) {
-                        console.log(`[SAP PARSER] Item in "${projectName}" has no serviceid`);
+                        // console.log(`[SAP PARSER] Item in "${projectName}" has no serviceid`);
                         return;
                     }
 
-                    const service = servicesMap[serviceId];
+                    const service = servicesMap[serviceId.trim()];
                     if (!service) {
-                        console.log(`[SAP PARSER] Service ${serviceId} not found in services map`);
+                        // console.log(`[SAP PARSER] Service ${serviceId} not found in services map`);
                         return;
                     }
+
+                    // Parse Server and Instance
+                    let serverHost = service.server || '';
+                    let instanceNum = service.msid || service.mode || '00';
+
+                    // Check if server has port (e.g. 10.20.6.26:3200)
+                    if (serverHost.includes(':')) {
+                        const parts = serverHost.split(':');
+                        if (parts.length === 2) {
+                            serverHost = parts[0]; // The IP/Host part
+                            const port = parts[1];
+
+                            // Extract last 2 digits of port for instance number
+                            if (port.length >= 2) {
+                                instanceNum = port.slice(-2);
+                            }
+                        }
+                    }
+
+                    // Resolve Router ID to actual Router String
+                    let routerString = service.routerid;
+                    if (service.routerid) {
+                        const routerUuid = service.routerid.trim();
+                        if (routersMap[routerUuid]) {
+                            routerString = routersMap[routerUuid];
+                        } else {
+                            console.log(`[SAP PARSER] Router UUID ${routerUuid} not found in map. Available: ${Object.keys(routersMap).join(', ')}`);
+                        }
+                    }
+
+                    // Extract Item/Service Memo
+                    let itemMemo = '';
+                    if (item.Memo) {
+                        console.log('[SAP PARSER] Found Memo in Item:', JSON.stringify(item.Memo));
+                        itemMemo = extractText(item.Memo);
+                    }
+
+                    if (!itemMemo && service.Memo) {
+                        console.log('[SAP PARSER] Found Memo in Service (fallback):', JSON.stringify(service.Memo));
+                        itemMemo = extractText(service.Memo);
+                    }
+
+                    if (itemMemo) {
+                        console.log('[SAP PARSER] Extracted Item/Service Memo Text:', itemMemo.substring(0, 50) + '...');
+                    } else if (item.Memo || service.Memo) {
+                        console.log('[SAP PARSER] ⚠️ Failed to extract text from Item/Service Memo object. Keys:', Object.keys(item.Memo || service.Memo));
+                    }
+
+                    // Decode HTML entities if needed (fast-xml-parser might do it)
+                    // Also handle xml:space="preserve" which might result in an object
 
                     systems.push({
                         uuid: service.uuid || '',
                         name: service.name || 'Unnamed System',
                         systemid: service.systemid || '',
-                        server: service.server || '',
-                        routerid: service.routerid,
-                        instance: service.msid || service.mode || '00',
+                        server: serverHost,
+                        routerid: routerString,
+                        instance: instanceNum,
+                        memo: itemMemo,
                     });
                 });
 
@@ -117,9 +202,8 @@ export const parseSapConfig = (xmlContent: string): ParsedProject[] => {
                     projects.push({
                         name: projectName,
                         systems,
+                        memo: projectMemo,
                     });
-                } else {
-                    console.log(`[SAP PARSER] Node "${projectName}" has no valid SAPGUI services, skipping`);
                 }
             });
         });

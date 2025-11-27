@@ -64,7 +64,7 @@ export const ProjectProvider = ({ children }: { children: ReactNode }) => {
         const apiKey = await getClientUUID();
 
         const newProject: Project = {
-            id: Date.now().toString(),
+            id: Date.now().toString() + Math.random().toString().slice(2, 5), // Ensure unique ID for rapid adds
             created_at: new Date().toISOString(),
             user_id: user.id,
             pc_name: pcName,
@@ -73,10 +73,12 @@ export const ProjectProvider = ({ children }: { children: ReactNode }) => {
             ...data,
         };
 
-        // Optimistic update
-        const updatedProjects = [newProject, ...projects];
-        setProjects(updatedProjects);
-        await saveProjects(updatedProjects);
+        // Optimistic update using functional state to handle multiple rapid calls
+        setProjects(prevProjects => {
+            const updatedProjects = [newProject, ...prevProjects];
+            saveProjects(updatedProjects); // Side effect: save to local storage
+            return updatedProjects;
+        });
 
         try {
             // Prepare data for Supabase with metadata fields
@@ -97,11 +99,13 @@ export const ProjectProvider = ({ children }: { children: ReactNode }) => {
 
             if (insertedData) {
                 // Replace temp ID with real ID from server and mark as synced
-                const finalProjects = updatedProjects.map(p =>
-                    p.id === newProject.id ? { ...insertedData, is_synced: true } : p
-                );
-                setProjects(finalProjects);
-                await saveProjects(finalProjects);
+                setProjects(prevProjects => {
+                    const finalProjects = prevProjects.map(p =>
+                        p.id === newProject.id ? { ...insertedData, is_synced: true } : p
+                    );
+                    saveProjects(finalProjects);
+                    return finalProjects;
+                });
                 return { ...insertedData, is_synced: true };
             }
         } catch (e) {

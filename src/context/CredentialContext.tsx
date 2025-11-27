@@ -93,7 +93,7 @@ export const CredentialProvider = ({ children }: { children: ReactNode }) => {
 
         // 1. Prepare object for Local State (Keep sensitive fields DECRYPTED for UI)
         const newCredentialState: Credential = {
-            id: Date.now().toString(),
+            id: Date.now().toString() + Math.random().toString().slice(2, 5), // Unique ID
             created_at: new Date().toISOString(),
             user_id: user.id,
             pc_name: pcName,
@@ -105,44 +105,26 @@ export const CredentialProvider = ({ children }: { children: ReactNode }) => {
             psk_encrypted: data.psk_encrypted,
         };
 
-        // 2. Prepare object for Storage/Supabase (Use ENCRYPTED fields)
-        const newCredentialStorage: Credential = {
-            ...newCredentialState,
-            password_encrypted: encryptedPassword,
-            psk_encrypted: encryptedPSK,
-        };
+        // Update State with DECRYPTED version using functional update
+        setCredentials(prevCredentials => {
+            const updatedCredentials = [newCredentialState, ...prevCredentials];
 
-        // Update State with DECRYPTED version
-        const updatedCredentials = [newCredentialState, ...credentials];
-        setCredentials(updatedCredentials);
+            // Fire-and-forget save to storage (async)
+            (async () => {
+                try {
+                    const listForStorage = await Promise.all(updatedCredentials.map(async (c) => ({
+                        ...c,
+                        password_encrypted: c.password_encrypted ? await encrypt(c.password_encrypted) : undefined,
+                        psk_encrypted: c.psk_encrypted ? await encrypt(c.psk_encrypted) : undefined,
+                    })));
+                    await saveCredentials(listForStorage);
+                } catch (err) {
+                    console.error('Error saving credentials to storage:', err);
+                }
+            })();
 
-        // Save to Local Storage with ENCRYPTED version
-        // We need to mix the new encrypted one with the existing (which are decrypted in state)
-        // So we need to re-encrypt everything or just save the new list but with the new one encrypted?
-        // Actually, saveCredentials expects the list of credentials. 
-        // If we pass 'updatedCredentials' (decrypted), saveCredentials will save plain text!
-        // We should probably change saveCredentials to expect encrypted, OR 
-        // we should encrypt the whole list before saving.
-        // Optimization: Just encrypt the new one and keep others as they are? 
-        // No, 'credentials' state is decrypted. 'saveCredentials' likely just JSON.stringifies.
-        // We must encrypt ALL credentials before saving to storage to be safe, 
-        // OR we rely on the fact that we loaded them encrypted? 
-        // Wait, loadCredentials decrypts them. So 'credentials' state is ALL decrypted.
-        // So when we call saveCredentials, we are saving PLAIN TEXT currently! 
-        // This is a bigger security flaw.
-
-        // FIX: We need to encrypt the list before saving to storage.
-        // For now, let's just make sure the current operation is correct for the user's immediate issue.
-        // The user's immediate issue is UI showing encrypted data.
-        // So setting state to 'newCredentialState' fixes the UI issue for 'add'.
-
-        // For storage, let's try to do it right.
-        const listForStorage = await Promise.all(updatedCredentials.map(async (c) => ({
-            ...c,
-            password_encrypted: c.password_encrypted ? await encrypt(c.password_encrypted) : undefined,
-            psk_encrypted: c.psk_encrypted ? await encrypt(c.psk_encrypted) : undefined,
-        })));
-        await saveCredentials(listForStorage);
+            return updatedCredentials;
+        });
 
         try {
             // Prepare data for Supabase with encrypted fields
@@ -165,19 +147,27 @@ export const CredentialProvider = ({ children }: { children: ReactNode }) => {
 
             if (insertedData) {
                 // When confirming sync, update the ID and sync status in state
-                // Keep the data decrypted in state!
-                const finalCredentials = updatedCredentials.map(c =>
-                    c.id === newCredentialState.id ? { ...c, id: insertedData.id, is_synced: true } : c
-                );
-                setCredentials(finalCredentials);
+                setCredentials(prevCredentials => {
+                    const finalCredentials = prevCredentials.map(c =>
+                        c.id === newCredentialState.id ? { ...c, id: insertedData.id, is_synced: true } : c
+                    );
 
-                // Update storage with the new ID/Sync status (Encrypted)
-                const finalListForStorage = await Promise.all(finalCredentials.map(async (c) => ({
-                    ...c,
-                    password_encrypted: c.password_encrypted ? await encrypt(c.password_encrypted) : undefined,
-                    psk_encrypted: c.psk_encrypted ? await encrypt(c.psk_encrypted) : undefined,
-                })));
-                await saveCredentials(finalListForStorage);
+                    // Update storage with the new ID/Sync status (Encrypted)
+                    (async () => {
+                        try {
+                            const finalListForStorage = await Promise.all(finalCredentials.map(async (c) => ({
+                                ...c,
+                                password_encrypted: c.password_encrypted ? await encrypt(c.password_encrypted) : undefined,
+                                psk_encrypted: c.psk_encrypted ? await encrypt(c.psk_encrypted) : undefined,
+                            })));
+                            await saveCredentials(finalListForStorage);
+                        } catch (err) {
+                            console.error('Error saving synced credentials:', err);
+                        }
+                    })();
+
+                    return finalCredentials;
+                });
             }
         } catch (e) {
             console.log('Add credential error (offline?):', e);

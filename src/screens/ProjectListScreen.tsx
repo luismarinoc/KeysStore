@@ -16,8 +16,8 @@ type ProjectListScreenNavigationProp = NativeStackNavigationProp<RootStackParamL
 
 const ProjectListScreen = () => {
     const navigation = useNavigation<ProjectListScreenNavigationProp>();
-    const { projects, deleteProject, addProject, deleteAllProjects } = useProjects();
-    const { addCredential, deleteCredential, getCredentialsByProject, deleteAllCredentials } = useCredentials();
+    const { projects, deleteProject, addProject, deleteAllProjects, refreshProjects } = useProjects();
+    const { addCredential, deleteCredential, getCredentialsByProject, deleteAllCredentials, refreshCredentials } = useCredentials();
     const { user, signOut } = useAuth();
     const { width } = useWindowDimensions();
 
@@ -197,6 +197,9 @@ const ProjectListScreen = () => {
 
                             console.log(`[SAP IMPORT] Creating credential for ${sys.name} (${envType})`);
 
+                            const noteContent = `SID: ${sys.systemid}\n\n${p.memo ? 'Project Note:\n' + p.memo + '\n\n' : ''}${sys.memo || ''}`;
+                            console.log('[SAP IMPORT] Note Content:', noteContent);
+
                             try {
                                 await addCredential({
                                     project_id: createdProject.id,
@@ -205,9 +208,10 @@ const ProjectListScreen = () => {
                                     title: sys.name,
                                     username: '',
                                     password_encrypted: '',
-                                    note_content: `SID: ${sys.systemid}\nServer: ${sys.server}\nInstance: ${sys.instance}\nRouter: ${sys.routerid || 'None'}`,
+                                    note_content: noteContent,
                                     host_address: sys.server,
                                     instance_number: sys.instance,
+                                    saprouter_string: sys.routerid,
                                 });
                                 console.log(`[SAP IMPORT] ✓ Credential created for ${sys.name}`);
                                 credentialCount++;
@@ -225,6 +229,10 @@ const ProjectListScreen = () => {
                     Alert.alert('Error de Proyecto', `No se pudo crear el proyecto ${p.name}: ${projectError.message || JSON.stringify(projectError)}`);
                 }
             }
+
+            // Ensure we have the latest data
+            await refreshProjects();
+            await refreshCredentials();
 
             setIsImporting(false);
             console.log(`[SAP IMPORT] ✓ Import complete: ${importedCount}/${totalProjects} projects, ${credentialCount} credentials`);

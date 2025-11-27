@@ -63,6 +63,7 @@ const CredentialFormScreen = () => {
             data.saprouter_string = saprouter;
             data.instance_number = instance;
             data.mandt = mandt;
+            data.note_content = note;
         } else if (effectiveCategory === 'WIFI') {
             data.ssid = ssid;
             data.psk_encrypted = psk;
@@ -161,63 +162,62 @@ const CredentialFormScreen = () => {
                             />
                         </View>
                     </View>
-                </>
-            )}
+                    <Text style={styles.label}>SSID</Text>
+                    <TextInput style={styles.input} value={ssid} onChangeText={setSsid} placeholder="WiFi Name" placeholderTextColor={colors.textSecondary} />
+                </View>
 
-            {effectiveCategory === 'WIFI' && (
-                <>
-                    <View style={styles.formGroup}>
-                        <Text style={styles.label}>SSID</Text>
-                        <TextInput style={styles.input} value={ssid} onChangeText={setSsid} placeholder="WiFi Name" placeholderTextColor={colors.textSecondary} />
-                    </View>
+            <View style={styles.formGroup}>
+                <Text style={styles.label}>Password (PSK)</Text>
+                <TextInput style={styles.input} value={psk} onChangeText={setPsk} placeholder="WiFi Password" secureTextEntry placeholderTextColor={colors.textSecondary} />
+            </View>
+        </>
+    )
+}
 
-                    <View style={styles.formGroup}>
-                        <Text style={styles.label}>Password (PSK)</Text>
-                        <TextInput style={styles.input} value={psk} onChangeText={setPsk} placeholder="WiFi Password" secureTextEntry placeholderTextColor={colors.textSecondary} />
-                    </View>
-                </>
-            )}
+{
+    effectiveCategory === 'VPN' && (
+        <>
+            <View style={styles.formGroup}>
+                <Text style={styles.label}>Host / Gateway</Text>
+                <TextInput style={styles.input} value={host} onChangeText={setHost} placeholder="vpn.domain.com" placeholderTextColor={colors.textSecondary} />
+            </View>
 
-            {effectiveCategory === 'VPN' && (
-                <>
-                    <View style={styles.formGroup}>
-                        <Text style={styles.label}>Host / Gateway</Text>
-                        <TextInput style={styles.input} value={host} onChangeText={setHost} placeholder="vpn.domain.com" placeholderTextColor={colors.textSecondary} />
-                    </View>
+            <View style={styles.formGroup}>
+                <Text style={styles.label}>Username</Text>
+                <TextInput style={styles.input} value={username} onChangeText={setUsername} placeholder="Username" placeholderTextColor={colors.textSecondary} />
+            </View>
 
-                    <View style={styles.formGroup}>
-                        <Text style={styles.label}>Username</Text>
-                        <TextInput style={styles.input} value={username} onChangeText={setUsername} placeholder="Username" placeholderTextColor={colors.textSecondary} />
-                    </View>
+            <View style={styles.formGroup}>
+                <Text style={styles.label}>Pre-Shared Key (PSK)</Text>
+                <TextInput style={styles.input} value={psk} onChangeText={setPsk} placeholder="Secret Key" secureTextEntry placeholderTextColor={colors.textSecondary} />
+            </View>
+        </>
+    )
+}
 
-                    <View style={styles.formGroup}>
-                        <Text style={styles.label}>Pre-Shared Key (PSK)</Text>
-                        <TextInput style={styles.input} value={psk} onChangeText={setPsk} placeholder="Secret Key" secureTextEntry placeholderTextColor={colors.textSecondary} />
-                    </View>
-                </>
-            )}
+{
+    effectiveCategory === 'NOTE' && (
+        <>
+            <View style={styles.formGroup}>
+                <Text style={styles.label}>Content</Text>
+                <TextInput
+                    style={[styles.input, styles.textArea]}
+                    value={note}
+                    onChangeText={setNote}
+                    placeholder="Write your note here..."
+                    placeholderTextColor={colors.textSecondary}
+                    multiline
+                    numberOfLines={4}
+                />
+            </View>
+        </>
+    )
+}
 
-            {effectiveCategory === 'NOTE' && (
-                <>
-                    <View style={styles.formGroup}>
-                        <Text style={styles.label}>Content</Text>
-                        <TextInput
-                            style={[styles.input, styles.textArea]}
-                            value={note}
-                            onChangeText={setNote}
-                            placeholder="Write your note here..."
-                            placeholderTextColor={colors.textSecondary}
-                            multiline
-                            numberOfLines={4}
-                        />
-                    </View>
-                </>
-            )}
-
-            <TouchableOpacity style={styles.button} onPress={handleSave}>
-                <Text style={styles.buttonText}>{credential ? 'Update Credential' : 'Create Credential'}</Text>
-            </TouchableOpacity>
-        </ScrollView>
+<TouchableOpacity style={styles.button} onPress={handleSave}>
+    <Text style={styles.buttonText}>{credential ? 'Update Credential' : 'Create Credential'}</Text>
+</TouchableOpacity>
+        </ScrollView >
     );
 };
 
