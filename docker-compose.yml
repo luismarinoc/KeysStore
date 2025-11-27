@@ -1,0 +1,9 @@
+version: "4.0"
+
+services:
+  pgdesk:
+    build: .
+    container_name: pgdesk
+    restart: unless-stopped
+    ports:
+      - "5174:5174"
