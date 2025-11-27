@@ -1,0 +1,188 @@
+import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
+import { Project } from '../types';
+import { supabase } from '../services/supabase';
+import { getProjects, saveProjects } from '../services/storage';
+import { Alert, Platform } from 'react-native';
+import * as Device from 'expo-device';
+import { getClientUUID } from '../services/deviceInfo';
+import { useAuth } from './AuthContext';
+
+interface ProjectContextType {
+    projects: Project[];
+    addProject: (data: Omit<Project, 'id' | 'created_at'>) => Promise<Project | undefined>;
+    updateProject: (id: string, data: Partial<Project>) => Promise<void>;
+    deleteProject: (id: string) => Promise<void>;
+    deleteAllProjects: () => Promise<void>;
+    refreshProjects: () => Promise<void>;
+}
+
+const ProjectContext = createContext<ProjectContextType | undefined>(undefined);
+
+export const ProjectProvider = ({ children }: { children: ReactNode }) => {
+    const [projects, setProjects] = useState<Project[]>([]);
+    const { user } = useAuth();
+
+    useEffect(() => {
+        loadProjects();
+    }, []);
+
+    const loadProjects = async () => {
+        const localProjects = await getProjects();
+        setProjects(localProjects);
+        await refreshProjects();
+    };
+
+    const refreshProjects = async () => {
+        try {
+            const { data, error } = await supabase
+                .from('keys_projects')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                console.log('Supabase fetch error (offline?):', error.message);
+                return;
+            }
+
+            if (data) {
+                const syncedData = data.map(p => ({ ...p, is_synced: true }));
+                setProjects(syncedData);
+                await saveProjects(syncedData);
+            }
+        } catch (e) {
+            console.log('Sync error:', e);
+        }
+    };
+
+    const addProject = async (data: Omit<Project, 'id' | 'created_at'>): Promise<Project | undefined> => {
+        if (!user) {
+            console.error('User not authenticated');
+            return undefined;
+        }
+
+        const pcName = user.email || 'Unknown User';
+        const apiKey = await getClientUUID();
+
+        const newProject: Project = {
+            id: Date.now().toString(),
+            created_at: new Date().toISOString(),
+            user_id: user.id,
+            pc_name: pcName,
+            api_key: apiKey,
+            is_synced: false,
+            ...data,
+        };
+
+        // Optimistic update
+        const updatedProjects = [newProject, ...projects];
+        setProjects(updatedProjects);
+        await saveProjects(updatedProjects);
+
+        try {
+            // Prepare data for Supabase with metadata fields
+            const supabaseData = {
+                ...data,
+                user_id: user.id,
+                pc_name: pcName,
+                api_key: apiKey,
+            };
+
+            const { data: insertedData, error } = await supabase
+                .from('keys_projects')
+                .insert([supabaseData])
+                .select()
+                .single();
+
+            if (error) throw error;
+
+            if (insertedData) {
+                // Replace temp ID with real ID from server and mark as synced
+                const finalProjects = updatedProjects.map(p =>
+                    p.id === newProject.id ? { ...insertedData, is_synced: true } : p
+                );
+                setProjects(finalProjects);
+                await saveProjects(finalProjects);
+                return { ...insertedData, is_synced: true };
+            }
+        } catch (e) {
+            console.log('Add project error (offline?):', e);
+            // We keep the local version. In a real app, we'd mark it as "unsynced"
+            Alert.alert('Offline', 'Project saved locally. Will sync when online (not implemented yet).');
+        }
+
+        return newProject;
+    };
+
+    const updateProject = async (id: string, data: Partial<Project>) => {
+        // Optimistic update
+        const updatedProjects = projects.map((p) => (p.id === id ? { ...p, ...data } : p));
+        setProjects(updatedProjects);
+        await saveProjects(updatedProjects);
+
+        try {
+            const { error } = await supabase
+                .from('keys_projects')
+                .update(data)
+                .eq('id', id);
+
+            if (error) throw error;
+        } catch (e) {
+            console.log('Update project error (offline?):', e);
+        }
+    };
+
+    const deleteProject = async (id: string) => {
+        // Optimistic update
+        const updatedProjects = projects.filter((p) => p.id !== id);
+        setProjects(updatedProjects);
+        await saveProjects(updatedProjects);
+
+        try {
+            const { error } = await supabase
+                .from('keys_projects')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
+        } catch (e: any) {
+            console.error('Delete project error:', e);
+            Alert.alert('Delete Failed', `Could not delete project from server: ${e.message || JSON.stringify(e)}`);
+            // Optionally revert state here if strict consistency is needed
+        }
+    };
+
+    const deleteAllProjects = async () => {
+        // Optimistic update
+        setProjects([]);
+        await saveProjects([]);
+
+        try {
+            // Delete all projects for the current user
+            if (!user) return;
+
+            const { error } = await supabase
+                .from('keys_projects')
+                .delete()
+                .eq('user_id', user.id);
+
+            if (error) throw error;
+        } catch (e: any) {
+            console.error('Delete all projects error:', e);
+            Alert.alert('Delete All Failed', `Could not delete projects from server: ${e.message || JSON.stringify(e)}`);
+        }
+    };
+
+    return (
+        <ProjectContext.Provider value={{ projects, addProject, updateProject, deleteProject, deleteAllProjects, refreshProjects }}>
+            {children}
+        </ProjectContext.Provider>
+    );
+};
+
+export const useProjects = () => {
+    const context = useContext(ProjectContext);
+    if (!context) {
+        throw new Error('useProjects must be used within a ProjectProvider');
+    }
+    return context;
+};
