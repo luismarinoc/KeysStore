@@ -57,14 +57,20 @@ export const parseSapConfig = (xmlContent: string): ParsedProject[] => {
         const serviceList = Array.isArray(servicesSection) ? servicesSection : [servicesSection];
 
         // Build a map of service UUID -> Service details for quick lookup
-        const servicesMap: Record<string, any> = {};
+        const servicesMap = new Map<string, any>();
         serviceList.forEach((service: any) => {
-            if (service.type === 'SAPGUI' && service.uuid) {
-                servicesMap[service.uuid.trim()] = service;
+            const uuid = service.uuid?.trim();
+            if (uuid) {
+                console.log(`[SAP PARSER] Adding service to map: ${service.name} (UUID: ${uuid}), has Memo: ${!!service.Memo}`);
+                if (service.Memo) {
+                    console.log(`[SAP PARSER]   Memo content preview:`, service.Memo.value?.substring(0, 50) || service.Memo);
+                }
+                servicesMap.set(uuid, service);
             }
         });
+        console.log(`[SAP PARSER] Total services in map: ${servicesMap.size}`);
 
-        console.log(`[SAP PARSER] Found ${Object.keys(servicesMap).length} SAPGUI services`);
+        console.log(`[SAP PARSER] Found ${servicesMap.size} SAPGUI services`);
 
         // Extract Nodes from Workspaces - these are the PROJECTS
         const workspaces = landscape?.Workspaces?.Workspace;
@@ -131,66 +137,88 @@ export const parseSapConfig = (xmlContent: string): ParsedProject[] => {
                         return;
                     }
 
-                    const service = servicesMap[serviceId.trim()];
+                    const service = servicesMap.get(serviceId.trim());
                     if (!service) {
                         // console.log(`[SAP PARSER] Service ${serviceId} not found in services map`);
                         return;
                     }
 
+                    // Skip Reference type services (shortcuts) to avoid duplicates
+                    // The actual service will be processed directly from its own Item
+                    if (service.type === 'Reference') {
+                        console.log(`[SAP PARSER] Skipping Reference/shortcut: ${service.name}`);
+                        return;
+                    }
+
+                    const actualService = service;
+
+                    const systemName = actualService.name || 'Unknown';
+                    const systemId = actualService.systemid || '';
+
                     // Parse Server and Instance
-                    let serverHost = service.server || '';
-                    let instanceNum = service.msid || service.mode || '00';
+                    // Extract server and instance
+                    const serverString = actualService.server || '';
+                    const serverParts = serverString.split(':');
+                    const serverHost = serverParts[0] || '';
+                    const serverPort = serverParts[1] || '';
 
-                    // Check if server has port (e.g. 10.20.6.26:3200)
-                    if (serverHost.includes(':')) {
-                        const parts = serverHost.split(':');
-                        if (parts.length === 2) {
-                            serverHost = parts[0]; // The IP/Host part
-                            const port = parts[1];
-
-                            // Extract last 2 digits of port for instance number
-                            if (port.length >= 2) {
-                                instanceNum = port.slice(-2);
-                            }
+                    // Extract instance from port (e.g., 3200 -> 00, 3210 -> 10)
+                    let instanceNum = '';
+                    if (serverPort) {
+                        const portNum = parseInt(serverPort, 10);
+                        if (!isNaN(portNum) && portNum >= 3200 && portNum < 3300) {
+                            const inst = portNum - 3200;
+                            instanceNum = inst.toString().padStart(2, '0');
                         }
                     }
 
-                    // Resolve Router ID to actual Router String
-                    let routerString = service.routerid;
-                    if (service.routerid) {
-                        const routerUuid = service.routerid.trim();
-                        if (routersMap[routerUuid]) {
-                            routerString = routersMap[routerUuid];
+                    // Resolve router string
+                    let routerString = '';
+                    const routerUuid = actualService.routerid;
+                    if (routerUuid) {
+                        const trimmedUuid = routerUuid.trim();
+                        if (routersMap[trimmedUuid]) {
+                            routerString = routersMap[trimmedUuid];
+                            console.log(`[SAP PARSER] Resolved router ${trimmedUuid} to: ${routerString}`);
                         } else {
                             console.log(`[SAP PARSER] Router UUID ${routerUuid} not found in map. Available: ${Object.keys(routersMap).join(', ')}`);
                         }
                     }
 
                     // Extract Item/Service Memo
+                    console.log(`[SAP PARSER] Processing Item with serviceId: ${serviceId}`);
+                    console.log(`[SAP PARSER] Actual Service object:`, actualService);
+                    console.log(`[SAP PARSER] Actual Service has Memo?`, !!actualService.Memo);
+
                     let itemMemo = '';
                     if (item.Memo) {
                         console.log('[SAP PARSER] Found Memo in Item:', JSON.stringify(item.Memo));
                         itemMemo = extractText(item.Memo);
+                        console.log('[SAP PARSER] Extracted Item Memo:', itemMemo);
                     }
 
-                    if (!itemMemo && service.Memo) {
-                        console.log('[SAP PARSER] Found Memo in Service (fallback):', JSON.stringify(service.Memo));
-                        itemMemo = extractText(service.Memo);
+                    if (!itemMemo && actualService.Memo) {
+                        console.log('[SAP PARSER] Found Memo in Service (fallback):', JSON.stringify(actualService.Memo));
+                        itemMemo = extractText(actualService.Memo);
+                        console.log('[SAP PARSER] Extracted Service Memo:', itemMemo);
                     }
 
                     if (itemMemo) {
                         console.log('[SAP PARSER] Extracted Item/Service Memo Text:', itemMemo.substring(0, 50) + '...');
-                    } else if (item.Memo || service.Memo) {
-                        console.log('[SAP PARSER] ⚠️ Failed to extract text from Item/Service Memo object. Keys:', Object.keys(item.Memo || service.Memo));
+                    } else if (item.Memo || actualService.Memo) {
+                        const memoObj = item.Memo || actualService.Memo;
+                        if (memoObj && typeof memoObj === 'object') {
+                            console.log('[SAP PARSER] ⚠️ Failed to extract text from Item/Service Memo object. Keys:', Object.keys(memoObj));
+                        }
                     }
 
                     // Decode HTML entities if needed (fast-xml-parser might do it)
                     // Also handle xml:space="preserve" which might result in an object
 
                     systems.push({
-                        uuid: service.uuid || '',
-                        name: service.name || 'Unnamed System',
-                        systemid: service.systemid || '',
+                        uuid: actualService.uuid || '',
+                        name: systemName,
+                        systemid: systemId,
                         server: serverHost,
                         routerid: routerString,
                         instance: instanceNum,

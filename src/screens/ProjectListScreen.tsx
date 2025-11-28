@@ -201,6 +201,7 @@ const ProjectListScreen = () => {
                             console.log('[SAP IMPORT] Note Content:', noteContent);
 
                             try {
+                                // Create APP credential
                                 await addCredential({
                                     project_id: createdProject.id,
                                     tab_category: 'APP',
@@ -215,6 +216,20 @@ const ProjectListScreen = () => {
                                 });
                                 console.log(`[SAP IMPORT] ✓ Credential created for ${sys.name}`);
                                 credentialCount++;
+
+                                // If system has a memo, also create a NOTE credential
+                                if (sys.memo && sys.memo.trim()) {
+                                    console.log(`[SAP IMPORT] Creating NOTE for ${sys.name}`);
+                                    await addCredential({
+                                        project_id: createdProject.id,
+                                        tab_category: 'NOTE',
+                                        environment: 'NONE',
+                                        title: `${sys.name} - Notes`,
+                                        note_content: noteContent,
+                                    });
+                                    console.log(`[SAP IMPORT] ✓ Note created for ${sys.name}`);
+                                    credentialCount++;
+                                }
                             } catch (credError: any) {
                                 console.error(`[SAP IMPORT] ✗ Failed to create credential for ${sys.name}:`, credError);
                                 Alert.alert('Error de Credencial', `No se pudo crear la credencial ${sys.name}: ${credError.message || JSON.stringify(credError)}`);
