@@ -1,26 +1,15 @@
-# ============================
-#   Etapa 1: Build
-# ============================
-FROM node:20-alpine AS build
+cd /ruta/a/KeysStore
 
-WORKDIR /app
+# 1. Borrar el lock viejo
+rm package-lock.json
 
-COPY package.json package-lock.json ./
-RUN npm ci
+# 2. Instalar según tu package.json (esto genera un lock nuevo)
+npm install
 
-COPY . .
+# 3. Verifica que todo anda
+npm run build   # o npm run dev, lo que uses normalmente
 
-RUN npm run build
-
-# ============================
-#   Etapa 2: Run con Vite Preview
-# ============================
-FROM node:20-alpine
-
-WORKDIR /app
-
-COPY --from=build /app /app
-
-EXPOSE 5174
-
-CMD ["npm", "run", "preview"]
+# 4. Sube los cambios a Git
+git add package.json package-lock.json
+git commit -m "Sync deps (vite, rollup, esbuild) and regenerate lockfile"
+git push
