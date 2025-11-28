@@ -1,21 +1,15 @@
-# 1) Build stage
-FROM node:18-alpine AS build
+FROM node:18-alpine
 
 WORKDIR /app
 
-COPY package.json package-lock.json ./
-
+COPY package*.json ./
 RUN npm install
 
 COPY . .
 
+# Este comando de Vite crea el build y sirve en el puerto 5174
 RUN npm run build
 
-# 2) NGINX stage
-FROM nginx:alpine
+EXPOSE 5174
 
-COPY --from=build /app/dist /usr/share/nginx/html
-
-EXPOSE  5174
-
-CMD ["nginx", "-g", "daemon off;"]
+CMD ["npm", "run", "preview", "--", "--host", "--port", "5174"]
