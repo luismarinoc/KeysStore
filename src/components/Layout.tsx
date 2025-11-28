@@ -52,11 +52,18 @@ export const Layout: React.FC<LayoutProps> = ({
 
                     {user && (
                         <View style={styles.userProfile}>
-                            <View style={styles.avatar}>
-                                <Text style={styles.avatarText}>
-                                    {user.email?.charAt(0).toUpperCase()}
-                                </Text>
-                            </View>
+                            {user.user_metadata?.avatar_url ? (
+                                <Image
+                                    source={{ uri: user.user_metadata.avatar_url }}
+                                    style={styles.avatarImage}
+                                />
+                            ) : (
+                                <View style={styles.avatar}>
+                                    <Text style={styles.avatarText}>
+                                        {user.email?.charAt(0).toUpperCase()}
+                                    </Text>
+                                </View>
+                            )}
                             <TouchableOpacity onPress={signOut} style={styles.logoutButton}>
                                 <Ionicons name="log-out-outline" size={20} color={colors.textSecondary} />
                             </TouchableOpacity>
@@ -149,6 +156,13 @@ const styles = StyleSheet.create({
         backgroundColor: colors.primaryLight,
         alignItems: 'center',
         justifyContent: 'center',
+        borderWidth: 1,
+        borderColor: colors.primary,
+    },
+    avatarImage: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
         borderWidth: 1,
         borderColor: colors.primary,
     },
