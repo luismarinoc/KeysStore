@@ -8,6 +8,7 @@ import { TabCategory, Environment, Credential } from '../../types';
 import { useCredentials } from '../../context/CredentialContext';
 import { RootStackParamList } from '../../../App';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { Layout } from '../../components/Layout';
 import { colors, spacing, typography, shadows, layout } from '../../theme';
 
 type ProjectDetailRouteProp = RouteProp<RootStackParamList, 'ProjectDetail'>;
@@ -44,81 +45,91 @@ const CredentialList = ({ category, environment, projectId }: { category: TabCat
         // Optional: Toast or small feedback
     };
 
-    const renderItem = ({ item }: { item: Credential }) => (
-        <View style={styles.card}>
-            <TouchableOpacity
-                style={styles.cardContent}
-                onPress={() => navigation.navigate('CredentialForm', { credential: item })}
-            >
-                <View style={styles.cardHeader}>
-                    <Text style={styles.cardTitle}>{item.title}</Text>
-                    {item.instance_number && <Text style={styles.badge}>Inst: {item.instance_number}</Text>}
-                    {item.mandt && <Text style={[styles.badge, { marginLeft: 4 }]}>Mandt: {item.mandt}</Text>}
-                    <View style={{ flex: 1 }} />
-                    <Ionicons
-                        name={item.is_synced ? "checkmark-circle" : "cloud-upload-outline"}
-                        size={16}
-                        color={item.is_synced ? colors.success : colors.warning}
-                        style={{ marginLeft: 8 }}
-                    />
-                </View>
+    const renderItem = ({ item }: { item: Credential }) => {
+        // Determine icon based on category/type
+        let iconName: keyof typeof Ionicons.glyphMap = 'key-outline';
+        if (item.tab_category === 'WIFI') iconName = 'wifi';
+        else if (item.tab_category === 'VPN') iconName = 'shield-checkmark-outline';
+        else if (item.tab_category === 'NOTE') iconName = 'document-text-outline';
+        else if (item.tab_category === 'APP') iconName = 'server-outline';
 
-                {item.username && (
-                    <View style={styles.row}>
-                        <Text style={styles.label}>User:</Text>
-                        <Text style={styles.value}>{item.username}</Text>
-                        <TouchableOpacity onPress={() => copyToClipboard(item.username!, 'Username')} style={styles.iconButton}>
-                            <Ionicons name="copy-outline" size={16} color={colors.primary} />
-                        </TouchableOpacity>
+        // Determine environment color
+        const envColor = item.environment && item.environment !== 'NONE'
+            ? colors.env[item.environment]
+            : colors.env.NONE;
+
+        return (
+            <View style={[styles.card, { borderColor: envColor.border }]}>
+                <TouchableOpacity
+                    style={styles.cardContent}
+                    onPress={() => navigation.navigate('CredentialForm', { credential: item })}
+                >
+                    <View style={styles.cardHeader}>
+                        <View style={[styles.iconContainer, { backgroundColor: envColor.bg }]}>
+                            <Ionicons name={iconName} size={20} color={envColor.text} />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                            <Text style={styles.cardTitle}>{item.title}</Text>
+                            <View style={styles.badgesContainer}>
+                                {item.environment && item.environment !== 'NONE' && (
+                                    <View style={[styles.pill, { backgroundColor: envColor.bg, borderColor: envColor.border }]}>
+                                        <Text style={[styles.pillText, { color: envColor.text }]}>{item.environment}</Text>
+                                    </View>
+                                )}
+                                {item.instance_number && (
+                                    <View style={styles.pill}>
+                                        <Text style={styles.pillText}>Inst: {item.instance_number}</Text>
+                                    </View>
+                                )}
+                                {item.mandt && (
+                                    <View style={styles.pill}>
+                                        <Text style={styles.pillText}>Mandt: {item.mandt}</Text>
+                                    </View>
+                                )}
+                            </View>
+                        </View>
+                        <Ionicons
+                            name={item.is_synced ? "checkmark-circle" : "cloud-upload-outline"}
+                            size={18}
+                            color={item.is_synced ? colors.success : colors.warning}
+                            style={{ marginLeft: 8 }}
+                        />
                     </View>
-                )}
 
-                {item.password_encrypted && (
-                    <View style={styles.row}>
-                        <Text style={styles.label}>Pass:</Text>
-                        <Text style={styles.value}>********</Text>
-                        <TouchableOpacity onPress={() => copyToClipboard(item.password_encrypted!, 'Password')} style={styles.iconButton}>
-                            <Ionicons name="copy-outline" size={16} color={colors.primary} />
-                        </TouchableOpacity>
-                    </View>
-                )}
+                    {item.note_content && item.tab_category === 'NOTE' ? (
+                        <Text style={styles.notePreview} numberOfLines={3}>
+                            {item.note_content}
+                        </Text>
+                    ) : (
+                        <View style={styles.detailsContainer}>
+                            {item.username && (
+                                <View style={styles.detailRow}>
+                                    <Ionicons name="person-outline" size={14} color={colors.textSecondary} />
+                                    <Text style={styles.detailText}>{item.username}</Text>
+                                    <TouchableOpacity onPress={() => copyToClipboard(item.username!, 'Username')} style={styles.copyButton}>
+                                        <Ionicons name="copy-outline" size={14} color={colors.primary} />
+                                    </TouchableOpacity>
+                                </View>
+                            )}
+                            {item.host_address && (
+                                <View style={styles.detailRow}>
+                                    <Ionicons name="desktop-outline" size={14} color={colors.textSecondary} />
+                                    <Text style={styles.detailText}>{item.host_address}</Text>
+                                    <TouchableOpacity onPress={() => copyToClipboard(item.host_address!, 'Host')} style={styles.copyButton}>
+                                        <Ionicons name="copy-outline" size={14} color={colors.primary} />
+                                    </TouchableOpacity>
+                                </View>
+                            )}
+                        </View>
+                    )}
+                </TouchableOpacity>
 
-                {item.psk_encrypted && (
-                    <View style={styles.row}>
-                        <Text style={styles.label}>PSK:</Text>
-                        <Text style={styles.value}>********</Text>
-                        <TouchableOpacity onPress={() => copyToClipboard(item.psk_encrypted!, 'PSK')} style={styles.iconButton}>
-                            <Ionicons name="copy-outline" size={16} color={colors.primary} />
-                        </TouchableOpacity>
-                    </View>
-                )}
-
-                {item.host_address && (
-                    <View style={styles.row}>
-                        <Text style={styles.label}>Host:</Text>
-                        <Text style={styles.value}>{item.host_address}</Text>
-                        <TouchableOpacity onPress={() => copyToClipboard(item.host_address!, 'Host')} style={styles.iconButton}>
-                            <Ionicons name="copy-outline" size={16} color={colors.primary} />
-                        </TouchableOpacity>
-                    </View>
-                )}
-
-                {item.ssid && (
-                    <View style={styles.row}>
-                        <Text style={styles.label}>SSID:</Text>
-                        <Text style={styles.value}>{item.ssid}</Text>
-                        <TouchableOpacity onPress={() => copyToClipboard(item.ssid!, 'SSID')} style={styles.iconButton}>
-                            <Ionicons name="copy-outline" size={16} color={colors.primary} />
-                        </TouchableOpacity>
-                    </View>
-                )}
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.deleteButton} onPress={() => handleDelete(item.id)}>
-                <Ionicons name="trash-outline" size={20} color={colors.danger} />
-            </TouchableOpacity>
-        </View>
-    );
+                <TouchableOpacity style={styles.deleteButton} onPress={() => handleDelete(item.id)}>
+                    <Ionicons name="trash-outline" size={20} color={colors.danger} />
+                </TouchableOpacity>
+            </View>
+        );
+    };
 
     return (
         <View style={styles.container}>
@@ -138,7 +149,7 @@ const CredentialList = ({ category, environment, projectId }: { category: TabCat
                 style={styles.fab}
                 onPress={() => navigation.navigate('CredentialForm', { projectId, category, environment })}
             >
-                <Ionicons name="add" size={30} color="#fff" />
+                <Ionicons name="add" size={32} color="#fff" />
             </TouchableOpacity>
 
             {/* Delete Confirmation Modal */}
@@ -179,40 +190,61 @@ const CredentialList = ({ category, environment, projectId }: { category: TabCat
 const Tab = createMaterialTopTabNavigator();
 
 const ProjectTabs = () => {
+    const navigation = useNavigation();
     const route = useRoute<ProjectDetailRouteProp>();
     const { project } = route.params;
 
     return (
-        <Tab.Navigator
-            screenOptions={{
-                tabBarLabelStyle: { fontSize: 13, fontWeight: '600', textTransform: 'none' },
-                tabBarItemStyle: { width: 'auto', paddingHorizontal: 20 },
-                tabBarScrollEnabled: true,
-                tabBarStyle: { backgroundColor: colors.surface, elevation: 0, shadowOpacity: 0, borderBottomWidth: 1, borderBottomColor: colors.border },
-                tabBarIndicatorStyle: { backgroundColor: colors.primary, height: 3, borderRadius: 1.5 },
-                tabBarActiveTintColor: colors.primary,
-                tabBarInactiveTintColor: colors.textSecondary,
-            }}
-        >
-            <Tab.Screen name="DEV">
-                {() => <CredentialList category="APP" environment="DEV" projectId={project.id} />}
-            </Tab.Screen>
-            <Tab.Screen name="QAS">
-                {() => <CredentialList category="APP" environment="QAS" projectId={project.id} />}
-            </Tab.Screen>
-            <Tab.Screen name="PRD">
-                {() => <CredentialList category="APP" environment="PRD" projectId={project.id} />}
-            </Tab.Screen>
-            <Tab.Screen name="WIFI">
-                {() => <CredentialList category="WIFI" projectId={project.id} />}
-            </Tab.Screen>
-            <Tab.Screen name="VPN">
-                {() => <CredentialList category="VPN" projectId={project.id} />}
-            </Tab.Screen>
-            <Tab.Screen name="NOTAS">
-                {() => <CredentialList category="NOTE" projectId={project.id} />}
-            </Tab.Screen>
-        </Tab.Navigator>
+        <Layout title={project.name} showBack onBack={() => navigation.goBack()}>
+            <View style={{ flex: 1, width: '100%' }}>
+                <Tab.Navigator
+                    sceneContainerStyle={{ backgroundColor: colors.background }}
+                    screenOptions={{
+                        tabBarLabelStyle: {
+                            fontFamily: 'Inter_600SemiBold',
+                            fontSize: 13,
+                            textTransform: 'none'
+                        },
+                        tabBarItemStyle: { width: 'auto', paddingHorizontal: 16 },
+                        tabBarScrollEnabled: true,
+                        tabBarStyle: {
+                            backgroundColor: colors.background,
+                            elevation: 0,
+                            shadowOpacity: 0,
+                            borderBottomWidth: 0,
+                            marginBottom: spacing.s
+                        },
+                        tabBarIndicatorStyle: {
+                            backgroundColor: colors.primary,
+                            height: 3,
+                            borderRadius: 1.5,
+                            bottom: -1
+                        },
+                        tabBarActiveTintColor: colors.primary,
+                        tabBarInactiveTintColor: colors.textSecondary,
+                    }}
+                >
+                    <Tab.Screen name="DEV">
+                        {() => <CredentialList category="APP" environment="DEV" projectId={project.id} />}
+                    </Tab.Screen>
+                    <Tab.Screen name="QAS">
+                        {() => <CredentialList category="APP" environment="QAS" projectId={project.id} />}
+                    </Tab.Screen>
+                    <Tab.Screen name="PRD">
+                        {() => <CredentialList category="APP" environment="PRD" projectId={project.id} />}
+                    </Tab.Screen>
+                    <Tab.Screen name="WIFI">
+                        {() => <CredentialList category="WIFI" projectId={project.id} />}
+                    </Tab.Screen>
+                    <Tab.Screen name="VPN">
+                        {() => <CredentialList category="VPN" projectId={project.id} />}
+                    </Tab.Screen>
+                    <Tab.Screen name="NOTAS">
+                        {() => <CredentialList category="NOTE" projectId={project.id} />}
+                    </Tab.Screen>
+                </Tab.Navigator>
+            </View>
+        </Layout>
     );
 };
 
@@ -228,12 +260,12 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         backgroundColor: colors.surface,
         borderRadius: layout.borderRadius,
-        marginBottom: spacing.s,
+        marginBottom: spacing.m,
         padding: spacing.m,
         alignItems: 'center',
         borderWidth: 1,
         borderColor: colors.border,
-        ...shadows.card,
+        ...shadows.soft,
     },
     cardContent: {
         flex: 1,
@@ -241,42 +273,64 @@ const styles = StyleSheet.create({
     cardHeader: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: spacing.xs,
-        flexWrap: 'wrap',
+        marginBottom: spacing.s,
+    },
+    iconContainer: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: spacing.m,
     },
     cardTitle: {
-        ...typography.h2,
+        ...typography.h3,
         fontSize: 16,
-        marginRight: spacing.s,
+        marginBottom: 4,
     },
-    badge: {
-        backgroundColor: colors.primaryLight,
-        color: colors.primary,
-        fontSize: 12,
-        fontWeight: '600',
+    badgesContainer: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 6,
+    },
+    pill: {
         paddingHorizontal: 8,
         paddingVertical: 2,
         borderRadius: 12,
-        overflow: 'hidden',
+        backgroundColor: colors.background,
+        borderWidth: 1,
+        borderColor: colors.border,
     },
-    row: {
+    pillText: {
+        fontSize: 11,
+        fontWeight: '600',
+        color: colors.textSecondary,
+    },
+    detailsContainer: {
+        marginLeft: 36 + spacing.m, // Align with title (icon width + margin)
+    },
+    detailRow: {
         flexDirection: 'row',
         alignItems: 'center',
         marginTop: 4,
     },
-    label: {
-        ...typography.label,
+    detailText: {
+        ...typography.body,
         fontSize: 13,
-        marginRight: 4,
-        width: 40,
+        color: colors.textSecondary,
+        marginLeft: 6,
+        marginRight: 8,
     },
-    value: {
-        fontSize: 13,
-        color: colors.textPrimary,
-    },
-    iconButton: {
+    copyButton: {
         padding: 4,
-        marginLeft: 4,
+    },
+    notePreview: {
+        ...typography.body,
+        fontSize: 13,
+        color: colors.textSecondary,
+        marginLeft: 36 + spacing.m,
+        marginTop: 4,
+        fontStyle: 'italic',
     },
     deleteButton: {
         padding: spacing.s,
@@ -299,8 +353,8 @@ const styles = StyleSheet.create({
     },
     fab: {
         position: 'absolute',
-        bottom: spacing.l,
-        right: spacing.l,
+        bottom: spacing.xl,
+        right: spacing.xl,
         width: 56,
         height: 56,
         borderRadius: 28,

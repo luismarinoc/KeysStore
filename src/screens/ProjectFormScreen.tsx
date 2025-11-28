@@ -4,6 +4,9 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { useProjects } from '../context/ProjectContext';
 import { RootStackParamList } from '../../App';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { Layout } from '../components/Layout';
+import { colors, spacing, typography, shadows, layout } from '../theme';
+import { LinearGradient } from 'expo-linear-gradient';
 
 type ProjectFormScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'ProjectForm'>;
 type ProjectFormScreenRouteProp = RouteProp<RootStackParamList, 'ProjectForm'>;
@@ -17,11 +20,7 @@ const ProjectFormScreen = () => {
     const [name, setName] = useState(projectToEdit?.name || '');
     const [logoUrl, setLogoUrl] = useState(projectToEdit?.logo_url || '');
 
-    useEffect(() => {
-        navigation.setOptions({
-            title: projectToEdit ? 'Edit Project' : 'New Project',
-        });
-    }, [navigation, projectToEdit]);
+    // Removed useEffect for navigation options as Layout handles the header
 
     const handleSave = () => {
         if (!name.trim()) {
@@ -38,61 +37,84 @@ const ProjectFormScreen = () => {
     };
 
     return (
-        <View style={styles.container}>
-            <Text style={styles.label}>Project Name *</Text>
-            <TextInput
-                style={styles.input}
-                value={name}
-                onChangeText={setName}
-                placeholder="Ex: SAP ERP"
-            />
+        <Layout
+            title={projectToEdit ? 'Edit Project' : 'New Project'}
+            showBack
+            onBack={() => navigation.goBack()}
+        >
+            <View style={styles.container}>
+                <View style={styles.formGroup}>
+                    <Text style={styles.label}>Project Name *</Text>
+                    <TextInput
+                        style={styles.input}
+                        value={name}
+                        onChangeText={setName}
+                        placeholder="Ex: SAP ERP"
+                        placeholderTextColor={colors.textSecondary}
+                    />
+                </View>
 
-            <Text style={styles.label}>Logo URL (Optional)</Text>
-            <TextInput
-                style={styles.input}
-                value={logoUrl}
-                onChangeText={setLogoUrl}
-                placeholder="https://example.com/logo.png"
-            />
+                <View style={styles.formGroup}>
+                    <Text style={styles.label}>Logo URL (Optional)</Text>
+                    <TextInput
+                        style={styles.input}
+                        value={logoUrl}
+                        onChangeText={setLogoUrl}
+                        placeholder="https://example.com/logo.png"
+                        placeholderTextColor={colors.textSecondary}
+                    />
+                </View>
 
-            <TouchableOpacity style={styles.button} onPress={handleSave}>
-                <Text style={styles.buttonText}>{projectToEdit ? 'Update' : 'Create'}</Text>
-            </TouchableOpacity>
-        </View>
+                <TouchableOpacity onPress={handleSave}>
+                    <LinearGradient
+                        colors={colors.gradients.primary as [string, string, ...string[]]}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 0 }}
+                        style={styles.button}
+                    >
+                        <Text style={styles.buttonText}>{projectToEdit ? 'Update' : 'Create'}</Text>
+                    </LinearGradient>
+                </TouchableOpacity>
+            </View>
+        </Layout>
     );
 };
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        padding: 20,
-        backgroundColor: '#fff',
+        padding: spacing.l,
+    },
+    formGroup: {
+        marginBottom: spacing.m,
     },
     label: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        marginBottom: 5,
-        color: '#333',
+        ...typography.label,
+        marginBottom: spacing.xs,
+        color: colors.textPrimary,
     },
     input: {
+        height: layout.inputHeight,
         borderWidth: 1,
-        borderColor: '#ddd',
-        borderRadius: 8,
-        padding: 12,
+        borderColor: colors.border,
+        borderRadius: layout.borderRadius,
+        paddingHorizontal: spacing.m,
         fontSize: 16,
-        marginBottom: 20,
-        backgroundColor: '#f9f9f9',
+        backgroundColor: colors.surface,
+        color: colors.textPrimary,
+        ...shadows.soft,
     },
     button: {
-        backgroundColor: '#007AFF',
-        padding: 15,
-        borderRadius: 8,
+        height: layout.inputHeight,
+        borderRadius: layout.borderRadius,
         alignItems: 'center',
+        justifyContent: 'center',
+        marginTop: spacing.l,
+        marginBottom: spacing.xl,
+        ...shadows.medium,
     },
     buttonText: {
-        color: '#fff',
-        fontSize: 16,
-        fontWeight: 'bold',
+        ...typography.button,
     },
 });
 

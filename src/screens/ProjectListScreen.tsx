@@ -8,6 +8,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
 import { useProjects } from '../context/ProjectContext';
 import { Project } from '../types';
+import { Layout } from '../components/Layout';
 import { colors, spacing, typography, shadows, layout } from '../theme';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
@@ -41,9 +42,10 @@ const ProjectListScreen = () => {
         .filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()))
         .sort((a, b) => a.name.localeCompare(b.name));
 
-    // Responsive grid: 2 columns on tablet/desktop, 1 on mobile
-    const numColumns = width > 600 ? 2 : 1;
-    const cardWidth = width > 600 ? (width - spacing.m * 3) / 2 : width - spacing.m * 2;
+    // Responsive grid: Max 2 columns as per user request
+    const numColumns = width > 700 ? 2 : 1;
+    // Use percentage width for 2 columns to ensure equality, accounting for gap
+    const cardWidth = numColumns > 1 ? '48%' : '100%';
 
     const performDeleteProject = async (id: string) => {
         try {
@@ -264,70 +266,6 @@ const ProjectListScreen = () => {
         }
     };
 
-    const renderHeader = () => (
-        <>
-            <View style={styles.header}>
-                <View style={styles.headerUserInfo}>
-                    {user?.user_metadata?.avatar_url ? (
-                        <Image
-                            source={{ uri: user.user_metadata.avatar_url }}
-                            style={styles.avatar}
-                        />
-                    ) : (
-                        <View style={styles.avatarPlaceholder}>
-                            <Text style={styles.avatarPlaceholderText}>
-                                {user?.email?.substring(0, 1).toUpperCase() || 'G'}
-                            </Text>
-                        </View>
-                    )}
-                    <View>
-                        <Text style={styles.headerTitle}>Projects</Text>
-                        {user?.user_metadata?.full_name && (
-                            <Text style={styles.headerUserName}>
-                                {user.user_metadata.full_name}
-                            </Text>
-                        )}
-                        <Text style={styles.headerSubtitle}>
-                            {user?.email || 'Guest'}
-                        </Text>
-                    </View>
-                </View>
-                <View style={{ flexDirection: 'row' }}>
-                    <TouchableOpacity onPress={handleImportSapConfig} style={[styles.logoutButton, { marginRight: 8 }]}>
-                        <Ionicons name="cloud-upload-outline" size={24} color={colors.primary} />
-                    </TouchableOpacity>
-                    {projects.length > 0 && (
-                        <TouchableOpacity onPress={handleDeleteAll} style={[styles.logoutButton, { marginRight: 8 }]}>
-                            <Ionicons name="trash-outline" size={24} color={colors.danger} />
-                        </TouchableOpacity>
-                    )}
-                    <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
-                        <Ionicons name="log-out-outline" size={24} color={colors.primary} />
-                    </TouchableOpacity>
-                </View>
-            </View>
-
-            {/* Search Bar */}
-            {projects.length > 0 && (
-                <View style={styles.searchContainer}>
-                    <Ionicons name="search-outline" size={20} color={colors.textSecondary} style={styles.searchIcon} />
-                    <TextInput
-                        style={styles.searchInput}
-                        placeholder="Buscar proyectos..."
-                        placeholderTextColor={colors.textSecondary}
-                        value={searchQuery}
-                        onChangeText={setSearchQuery}
-                    />
-                    {searchQuery.length > 0 && (
-                        <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.clearButton}>
-                            <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
-                        </TouchableOpacity>
-                    )}
-                </View>
-            )}
-        </>
-    );
-
     const renderItem = ({ item }: { item: Project }) => (
         <View style={[styles.card, { width: cardWidth }]}>
             <TouchableOpacity
@@ -338,38 +276,72 @@ const ProjectListScreen = () => {
                     <Text style={styles.iconText}>{item.name.substring(0, 2).toUpperCase()}</Text>
                 </View>
                 <View style={styles.textContainer}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <Text style={styles.title}>{item.name}</Text>
-                        <Ionicons
-                            name={item.is_synced ? "checkmark-circle" : "cloud-upload-outline"}
-                            size={18}
-                            color={item.is_synced ? colors.success : colors.warning}
-                        />
-                    </View>
+                    <Text style={styles.title} numberOfLines={1}>{item.name}</Text>
                     <Text style={styles.subtitle}>Created: {new Date(item.created_at).toLocaleDateString()}</Text>
+                </View>
+                <View style={styles.statusContainer}>
+                    <Ionicons
+                        name={item.is_synced ? "checkmark-circle" : "cloud-upload-outline"}
+                        size={18}
+                        color={item.is_synced ? colors.success : colors.warning}
+                    />
                 </View>
             </TouchableOpacity>
 
             <View style={styles.actions}>
                 <TouchableOpacity
-                    style={[styles.actionButton, styles.editButton]}
+                    style={styles.iconActionButton}
                     onPress={() => navigation.navigate('ProjectForm', { project: item })}
                 >
-                    <Text style={styles.actionText}>Edit</Text>
+                    <Ionicons name="create-outline" size={20} color={colors.textSecondary} />
                 </TouchableOpacity>
                 <TouchableOpacity
-                    style={[styles.actionButton, styles.deleteButton]}
+                    style={styles.iconActionButton}
                     onPress={() => handleDelete(item.id)}
                 >
-                    <Text style={[styles.actionText, styles.deleteText]}>Delete</Text>
+                    <Ionicons name="trash-outline" size={20} color={colors.danger} />
                 </TouchableOpacity>
             </View>
         </View>
     );
 
     return (
-        <View style={styles.container}>
-            {renderHeader()}
+        <Layout
+            title="Projects"
+            actions={
+                <View style={{ flexDirection: 'row' }}>
+                    <TouchableOpacity onPress={handleImportSapConfig} style={[styles.iconButton, { marginRight: 8 }]}>
+                        <Ionicons name="cloud-upload-outline" size={20} color={colors.primary} />
+                    </TouchableOpacity>
+                    {projects.length > 0 && (
+                        <TouchableOpacity onPress={handleDeleteAll} style={styles.iconButton}>
+                            <Ionicons name="trash-outline" size={20} color={colors.danger} />
+                        </TouchableOpacity>
+                    )}
+                </View>
+            }
+        >
+            {/* Search Bar */}
+            {projects.length > 0 && (
+                <View style={styles.searchWrapper}>
+                    <View style={styles.searchContainer}>
+                        <Ionicons name="search-outline" size={20} color={colors.textSecondary} style={styles.searchIcon} />
+                        <TextInput
+                            style={styles.searchInput}
+                            placeholder="Search projects..."
+                            placeholderTextColor={colors.textSecondary}
+                            value={searchQuery}
+                            onChangeText={setSearchQuery}
+                        />
+                        {searchQuery.length > 0 && (
+                            <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.clearButton}>
+                                <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
+                            </TouchableOpacity>
+                        )}
+                    </View>
+                </View>
+            )}
+
             <FlatList
                 data={filteredProjects}
                 renderItem={renderItem}
@@ -377,12 +349,15 @@ const ProjectListScreen = () => {
                 contentContainerStyle={styles.list}
                 numColumns={numColumns}
                 key={numColumns} // Force re-render on orientation change
+                showsVerticalScrollIndicator={false}
+                columnWrapperStyle={numColumns > 1 ? { justifyContent: 'space-between' } : undefined}
             />
+
             <TouchableOpacity
                 style={styles.fab}
                 onPress={() => navigation.navigate('ProjectForm')}
             >
-                <Text style={styles.fabText}>+</Text>
+                <Ionicons name="add" size={32} color="#FFF" />
             </TouchableOpacity>
 
             {/* Import Progress Modal */}
@@ -477,7 +452,7 @@ const ProjectListScreen = () => {
                     </View>
                 </View>
             </Modal>
-        </View>
+        </Layout>
     );
 };
 
@@ -535,29 +510,42 @@ const styles = StyleSheet.create({
         color: colors.textSecondary,
         fontSize: 14,
     },
-    logoutButton: {
+    iconButton: {
         padding: spacing.s,
+        backgroundColor: colors.surface,
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: colors.border,
+        ...shadows.soft,
     },
     list: {
         padding: spacing.m,
+        paddingBottom: 100, // Space for FAB
     },
     card: {
         backgroundColor: colors.surface,
         borderRadius: layout.borderRadius,
         marginBottom: spacing.m,
-        marginRight: spacing.m, // Grid spacing
-        ...shadows.card,
+        // marginRight: spacing.m, // Removed to fix alignment with space-between
+        ...shadows.medium, // Updated shadow
+        borderWidth: 1,
+        borderColor: colors.border,
         overflow: 'hidden',
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingRight: spacing.s,
     },
     cardContent: {
         padding: spacing.m,
         flexDirection: 'row',
         alignItems: 'center',
+        flex: 1,
     },
     iconPlaceholder: {
-        width: 50,
-        height: 50,
-        borderRadius: 25,
+        width: 40,
+        height: 40,
+        borderRadius: 20,
         backgroundColor: colors.primaryLight,
         justifyContent: 'center',
         alignItems: 'center',
@@ -566,22 +554,29 @@ const styles = StyleSheet.create({
     iconText: {
         color: colors.primary,
         fontWeight: 'bold',
-        fontSize: 18,
+        fontSize: 16,
     },
     textContainer: {
         flex: 1,
+        marginRight: spacing.m,
+    },
+    statusContainer: {
+        marginRight: spacing.m,
     },
     title: {
-        ...typography.h2,
-        marginBottom: spacing.xs,
+        ...typography.h3,
+        marginBottom: 2,
     },
     subtitle: {
         ...typography.label,
+        fontSize: 12,
     },
     actions: {
         flexDirection: 'row',
-        borderTopWidth: 1,
-        borderTopColor: colors.border,
+        alignItems: 'center',
+    },
+    iconActionButton: {
+        padding: spacing.s,
     },
     actionButton: {
         flex: 1,
@@ -604,8 +599,8 @@ const styles = StyleSheet.create({
     },
     fab: {
         position: 'absolute',
-        bottom: spacing.l,
-        right: spacing.l,
+        bottom: spacing.xl,
+        right: spacing.xl,
         width: 56,
         height: 56,
         borderRadius: 28,
@@ -617,7 +612,7 @@ const styles = StyleSheet.create({
     fabText: {
         fontSize: 32,
         color: '#fff',
-        marginTop: -4,
+        marginTop: -2,
     },
     modalBackground: {
         flex: 1,
@@ -691,17 +686,23 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontWeight: '600',
     },
+    searchWrapper: {
+        width: '100%',
+        alignItems: 'center',
+        marginBottom: spacing.m,
+    },
     searchContainer: {
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: colors.surface,
         marginHorizontal: spacing.m,
         marginTop: spacing.s,
-        marginBottom: spacing.m,
         paddingHorizontal: spacing.m,
         borderRadius: layout.borderRadius,
         borderWidth: 1,
         borderColor: colors.border,
+        width: '100%',
+        maxWidth: 800,
     },
     searchIcon: {
         marginRight: spacing.s,

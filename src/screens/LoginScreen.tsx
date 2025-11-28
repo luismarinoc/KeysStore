@@ -3,6 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator,
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { colors, spacing, typography, layout, shadows } from '../theme';
+import { LinearGradient } from 'expo-linear-gradient';
 
 export default function LoginScreen() {
     const { signInWithGoogle } = useAuth();
@@ -30,18 +31,25 @@ export default function LoginScreen() {
                 <Text style={styles.subtitle}>Secure Credential Management</Text>
 
                 <TouchableOpacity
-                    style={[styles.button, loading && styles.buttonDisabled]}
                     onPress={handleGoogleSignIn}
                     disabled={loading}
+                    style={{ width: '100%' }}
                 >
-                    {loading ? (
-                        <ActivityIndicator color="#fff" />
-                    ) : (
-                        <>
-                            <Ionicons name="logo-google" size={24} color="#fff" style={styles.buttonIcon} />
-                            <Text style={styles.buttonText}>Sign in with Google</Text>
-                        </>
-                    )}
+                    <LinearGradient
+                        colors={colors.gradients.primary as [string, string, ...string[]]}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 0 }}
+                        style={[styles.button, loading && styles.buttonDisabled]}
+                    >
+                        {loading ? (
+                            <ActivityIndicator color="#fff" />
+                        ) : (
+                            <>
+                                <Ionicons name="logo-google" size={24} color="#fff" style={styles.buttonIcon} />
+                                <Text style={styles.buttonText}>Sign in with Google</Text>
+                            </>
+                        )}
+                    </LinearGradient>
                 </TouchableOpacity>
 
                 <Text style={styles.footer}>
@@ -80,14 +88,13 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
     button: {
-        backgroundColor: colors.primary,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
         padding: spacing.m,
         borderRadius: layout.borderRadius,
         width: '100%',
-        ...shadows.card,
+        ...shadows.medium,
     },
     buttonDisabled: {
         opacity: 0.6,
