@@ -8,7 +8,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "build": "npx expo export --platform web",
-    "preview": "npx serve dist --single --listen 5174"
+    "preview": "vite preview --host 0.0.0.0 --port 5174"
   },
   "dependencies": {
     "@expo-google-fonts/inter": "^0.4.2",
@@ -46,7 +46,8 @@
     "@babel/core": "^7.20.0",
     "@types/react": "~18.3.12",
     "serve": "^14.2.5",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "vite": "^6.0.0"
   },
   "private": true
 }
