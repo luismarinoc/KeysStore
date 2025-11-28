@@ -1,15 +1,21 @@
-cd /ruta/a/KeysStore
+# 1) Build stage
+FROM node:18-alpine AS build
 
-# 1. Borrar el lock viejo
-rm package-lock.json
+WORKDIR /app
 
-# 2. Instalar según tu package.json (esto genera un lock nuevo)
-npm install
+COPY package.json package-lock.json ./
 
-# 3. Verifica que todo anda
-npm run build   # o npm run dev, lo que uses normalmente
+RUN npm install
 
-# 4. Sube los cambios a Git
-git add package.json package-lock.json
-git commit -m "Sync deps (vite, rollup, esbuild) and regenerate lockfile"
-git push
+COPY . .
+
+RUN npm run build
+
+# 2) NGINX stage
+FROM nginx:alpine
+
+COPY --from=build /app/dist /usr/share/nginx/html
+
+EXPOSE  5174
+
+CMD ["nginx", "-g", "daemon off;"]
