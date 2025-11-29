@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert, useWindowDimensions, Image, Platform, Modal, ActivityIndicator, TextInput } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert, useWindowDimensions, Image, Platform, Modal, ActivityIndicator, TextInput, Dimensions } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import { parseSapConfig } from '../services/SapConfigParser';
 import { useCredentials } from '../context/CredentialContext';
@@ -23,6 +23,7 @@ const ProjectListScreen = () => {
     const { width } = useWindowDimensions();
 
     const [isImporting, setIsImporting] = useState(false);
+    const isMobile = Dimensions.get('window').width < 768;
     const [importMessage, setImportMessage] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
     const [deleteConfirmation, setDeleteConfirmation] = useState<{
@@ -293,13 +294,13 @@ const ProjectListScreen = () => {
                     style={styles.iconActionButton}
                     onPress={() => navigation.navigate('ProjectForm', { project: item })}
                 >
-                    <Ionicons name="create-outline" size={20} color={colors.textSecondary} />
+                    <Ionicons name="create-outline" size={isMobile ? 24 : 20} color={colors.textSecondary} />
                 </TouchableOpacity>
                 <TouchableOpacity
                     style={styles.iconActionButton}
                     onPress={() => handleDelete(item.id)}
                 >
-                    <Ionicons name="trash-outline" size={20} color={colors.danger} />
+                    <Ionicons name="trash-outline" size={isMobile ? 24 : 20} color={colors.danger} />
                 </TouchableOpacity>
             </View>
         </View>
@@ -311,11 +312,11 @@ const ProjectListScreen = () => {
             actions={
                 <View style={{ flexDirection: 'row' }}>
                     <TouchableOpacity onPress={handleImportSapConfig} style={[styles.iconButton, { marginRight: 8 }]}>
-                        <Ionicons name="cloud-upload-outline" size={20} color={colors.primary} />
+                        <Ionicons name="cloud-upload-outline" size={isMobile ? 24 : 20} color={colors.primary} />
                     </TouchableOpacity>
                     {projects.length > 0 && (
                         <TouchableOpacity onPress={handleDeleteAll} style={styles.iconButton}>
-                            <Ionicons name="trash-outline" size={20} color={colors.danger} />
+                            <Ionicons name="trash-outline" size={isMobile ? 24 : 20} color={colors.danger} />
                         </TouchableOpacity>
                     )}
                 </View>

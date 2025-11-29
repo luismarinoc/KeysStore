@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Platform, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Platform, Image, Dimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, shadows, typography, layout, spacing } from '../theme';
@@ -24,6 +24,7 @@ export const Layout: React.FC<LayoutProps> = ({
     const insets = useSafeAreaInsets();
     const { user, signOut } = useAuth();
     const { isReadOnlyMode, isSupabaseAvailable, lastSyncTime, syncStatus, refresh } = useOffline();
+    const isMobile = Dimensions.get('window').width < 768;
 
     return (
         <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -53,9 +54,9 @@ export const Layout: React.FC<LayoutProps> = ({
                     {actions}
 
                     {/* Persistent Status Indicator */}
-                    <View style={[styles.statusIndicator, isReadOnlyMode ? styles.statusOffline : styles.statusOnline]}>
-                        <View style={[styles.statusDot, { backgroundColor: isReadOnlyMode ? colors.danger : colors.success }]} />
-                        <Text style={[styles.statusText, { color: isReadOnlyMode ? colors.danger : colors.success }]}>
+                    <View style={[styles.statusIndicator, isReadOnlyMode ? styles.statusOffline : styles.statusOnline, isMobile && styles.statusIndicatorMobile]}>
+                        <View style={[styles.statusDot, isMobile && styles.statusDotMobile, { backgroundColor: isReadOnlyMode ? colors.danger : colors.success }]} />
+                        <Text style={[styles.statusText, isMobile && styles.statusTextMobile, { color: isReadOnlyMode ? colors.danger : colors.success }]}>
                             {isReadOnlyMode ? 'Sin conexión' : 'Conectado'}
                         </Text>
                     </View>
@@ -75,7 +76,7 @@ export const Layout: React.FC<LayoutProps> = ({
                                 </View>
                             )}
                             <TouchableOpacity onPress={signOut} style={styles.logoutButton}>
-                                <Ionicons name="log-out-outline" size={20} color={colors.textSecondary} />
+                                <Ionicons name="log-out-outline" size={isMobile ? 22 : 20} color={colors.textSecondary} />
                             </TouchableOpacity>
                         </View>
                     )}
@@ -288,5 +289,18 @@ const styles = StyleSheet.create({
         fontSize: 12,
         fontWeight: '600',
         fontFamily: typography.fontFamily,
+    },
+    statusIndicatorMobile: {
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+    },
+    statusDotMobile: {
+        width: 10,
+        height: 10,
+        borderRadius: 5,
+    },
+    statusTextMobile: {
+        fontSize: 13,
+        fontWeight: '700',
     },
 });
