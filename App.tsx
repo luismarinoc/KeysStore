@@ -20,6 +20,7 @@ import LoginScreen from './src/screens/LoginScreen';
 import { ProjectProvider } from './src/context/ProjectContext';
 import { CredentialProvider } from './src/context/CredentialContext';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
+import { OfflineProvider } from './src/context/OfflineContext';
 import { Project, Credential, TabCategory, Environment } from './src/types';
 import { colors } from './src/theme';
 
@@ -115,7 +116,9 @@ export default function App() {
     return (
         <SafeAreaProvider>
             <AuthProvider>
-                <AppContent />
+                <OfflineProvider>
+                    <AppContent />
+                </OfflineProvider>
             </AuthProvider>
         </SafeAreaProvider>
     );
