@@ -82,7 +82,7 @@ const CredentialFormScreen = () => {
 
     return (
         <Layout
-            title={credential ? 'Edit Credential' : `New ${effectiveCategory}`}
+            title={credential ? 'Editar Credencial' : `Nuevo ${effectiveCategory}`}
             showBack
             onBack={() => navigation.goBack()}
         >

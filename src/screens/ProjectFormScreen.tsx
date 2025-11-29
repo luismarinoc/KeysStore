@@ -38,13 +38,13 @@ const ProjectFormScreen = () => {
 
     return (
         <Layout
-            title={projectToEdit ? 'Edit Project' : 'New Project'}
+            title={projectToEdit ? 'Editar Proyecto' : 'Nuevo Proyecto'}
             showBack
             onBack={() => navigation.goBack()}
         >
             <View style={styles.container}>
                 <View style={styles.formGroup}>
-                    <Text style={styles.label}>Project Name *</Text>
+                    <Text style={styles.label}>Nombre del Proyecto *</Text>
                     <TextInput
                         style={styles.input}
                         value={name}
@@ -60,7 +60,7 @@ const ProjectFormScreen = () => {
                         style={styles.input}
                         value={logoUrl}
                         onChangeText={setLogoUrl}
-                        placeholder="https://example.com/logo.png"
+                        placeholder="https://ejemplo.com/logo.png"
                         placeholderTextColor={colors.textSecondary}
                     />
                 </View>
@@ -72,7 +72,7 @@ const ProjectFormScreen = () => {
                         end={{ x: 1, y: 0 }}
                         style={styles.button}
                     >
-                        <Text style={styles.buttonText}>{projectToEdit ? 'Update' : 'Create'}</Text>
+                        <Text style={styles.buttonText}>{projectToEdit ? 'Actualizar' : 'Crear'}</Text>
                     </LinearGradient>
                 </TouchableOpacity>
             </View>

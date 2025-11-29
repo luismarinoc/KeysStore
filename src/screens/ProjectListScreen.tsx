@@ -278,7 +278,7 @@ const ProjectListScreen = () => {
                 </View>
                 <View style={styles.textContainer}>
                     <Text style={styles.title} numberOfLines={1}>{item.name}</Text>
-                    <Text style={styles.subtitle}>Created: {new Date(item.created_at).toLocaleDateString()}</Text>
+                    <Text style={styles.subtitle}>Creado: {new Date(item.created_at).toLocaleDateString('es-ES')}</Text>
                 </View>
                 <View style={styles.statusContainer}>
                     <Ionicons
@@ -294,13 +294,13 @@ const ProjectListScreen = () => {
                     style={styles.iconActionButton}
                     onPress={() => navigation.navigate('ProjectForm', { project: item })}
                 >
-                    <Ionicons name="create-outline" size={isMobile ? 24 : 20} color={colors.textSecondary} />
+                    <Ionicons name="create-outline" size={isMobile ? 28 : 20} color={colors.textSecondary} />
                 </TouchableOpacity>
                 <TouchableOpacity
                     style={styles.iconActionButton}
                     onPress={() => handleDelete(item.id)}
                 >
-                    <Ionicons name="trash-outline" size={isMobile ? 24 : 20} color={colors.danger} />
+                    <Ionicons name="trash-outline" size={isMobile ? 28 : 20} color={colors.danger} />
                 </TouchableOpacity>
             </View>
         </View>
@@ -308,15 +308,15 @@ const ProjectListScreen = () => {
 
     return (
         <Layout
-            title="Projects"
+            title="Proyectos"
             actions={
                 <View style={{ flexDirection: 'row' }}>
                     <TouchableOpacity onPress={handleImportSapConfig} style={[styles.iconButton, { marginRight: 8 }]}>
-                        <Ionicons name="cloud-upload-outline" size={isMobile ? 24 : 20} color={colors.primary} />
+                        <Ionicons name="cloud-upload-outline" size={isMobile ? 28 : 20} color={colors.primary} />
                     </TouchableOpacity>
                     {projects.length > 0 && (
                         <TouchableOpacity onPress={handleDeleteAll} style={styles.iconButton}>
-                            <Ionicons name="trash-outline" size={isMobile ? 24 : 20} color={colors.danger} />
+                            <Ionicons name="trash-outline" size={isMobile ? 28 : 20} color={colors.danger} />
                         </TouchableOpacity>
                     )}
                 </View>
@@ -329,7 +329,7 @@ const ProjectListScreen = () => {
                         <Ionicons name="search-outline" size={20} color={colors.textSecondary} style={styles.searchIcon} />
                         <TextInput
                             style={styles.searchInput}
-                            placeholder="Search projects..."
+                            placeholder="Buscar proyectos..."
                             placeholderTextColor={colors.textSecondary}
                             value={searchQuery}
                             onChangeText={setSearchQuery}
@@ -387,25 +387,25 @@ const ProjectListScreen = () => {
                     <View style={styles.confirmModalContainer}>
                         <Ionicons name="warning-outline" size={48} color={colors.danger} />
                         <Text style={styles.confirmTitle}>
-                            {deleteConfirmation.type === 'all' ? 'Delete All Data?' : 'Delete Project?'}
+                            {deleteConfirmation.type === 'all' ? '¿Eliminar Todos los Datos?' : '¿Eliminar Proyecto?'}
                         </Text>
                         <Text style={styles.confirmMessage}>
                             {deleteConfirmation.type === 'all'
-                                ? '⚠️ This will permanently delete ALL projects and credentials. This action cannot be undone.'
-                                : 'This will delete the project and all its credentials.'}
+                                ? '⚠️ Esto eliminará permanentemente TODOS los proyectos y credenciales. Esta acción no se puede deshacer.'
+                                : 'Esto eliminará el proyecto y todas sus credenciales.'}
                         </Text>
                         <View style={styles.confirmButtons}>
                             <TouchableOpacity
                                 style={[styles.confirmButton, styles.cancelButton]}
                                 onPress={() => setDeleteConfirmation({ visible: false, type: 'single', id: '' })}
                             >
-                                <Text style={styles.cancelButtonText}>Cancel</Text>
+                                <Text style={styles.cancelButtonText}>Cancelar</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 style={[styles.confirmButton, styles.deleteConfirmButton]}
                                 onPress={confirmDelete}
                             >
-                                <Text style={styles.deleteButtonText}>Delete</Text>
+                                <Text style={styles.deleteButtonText}>Eliminar</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
