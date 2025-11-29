@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, shadows, typography, layout, spacing } from '../theme';
 import { useAuth } from '../context/AuthContext';
+import { useOffline } from '../context/OfflineContext';
 
 interface LayoutProps {
     children: React.ReactNode;
@@ -22,6 +23,7 @@ export const Layout: React.FC<LayoutProps> = ({
 }) => {
     const insets = useSafeAreaInsets();
     const { user, signOut } = useAuth();
+    const { isReadOnlyMode, isSupabaseAvailable, lastSyncTime, syncStatus, refresh } = useOffline();
 
     return (
         <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -71,6 +73,32 @@ export const Layout: React.FC<LayoutProps> = ({
                     )}
                 </View>
             </View>
+
+            {/* Connection Status Banner */}
+            {isReadOnlyMode && (
+                <View style={styles.offlineBanner}>
+                    <Ionicons name="cloud-offline-outline" size={16} color={colors.warning} />
+                    <Text style={styles.offlineText}>
+                        Offline Mode - Viewing cached data only
+                    </Text>
+                    {lastSyncTime && (
+                        <Text style={styles.offlineSubtext}>
+                            Last synced: {new Date(lastSyncTime).toLocaleTimeString()}
+                        </Text>
+                    )}
+                    <TouchableOpacity onPress={refresh} style={styles.retryButton}>
+                        <Ionicons name="refresh-outline" size={14} color={colors.primary} />
+                        <Text style={styles.retryText}>Retry</Text>
+                    </TouchableOpacity>
+                </View>
+            )}
+
+            {syncStatus === 'syncing' && (
+                <View style={[styles.offlineBanner, styles.syncingBanner]}>
+                    <Ionicons name="sync-outline" size={16} color={colors.primary} />
+                    <Text style={styles.syncingText}>Syncing...</Text>
+                </View>
+            )}
 
             {/* Main Content */}
             <View style={styles.content}>
@@ -173,6 +201,48 @@ const styles = StyleSheet.create({
     },
     logoutButton: {
         padding: spacing.xs,
+    },
+    offlineBanner: {
+        backgroundColor: '#FFF4E5',
+        borderBottomWidth: 1,
+        borderBottomColor: colors.warning,
+        paddingVertical: spacing.s,
+        paddingHorizontal: spacing.m,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.s,
+    },
+    syncingBanner: {
+        backgroundColor: '#E5F2FF',
+        borderBottomColor: colors.primary,
+    },
+    offlineText: {
+        ...typography.label,
+        color: colors.textPrimary,
+        flex: 1,
+    },
+    offlineSubtext: {
+        ...typography.caption,
+        color: colors.textSecondary,
+    },
+    syncingText: {
+        ...typography.label,
+        color: colors.textPrimary,
+        flex: 1,
+    },
+    retryButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        paddingHorizontal: spacing.s,
+        paddingVertical: 4,
+        backgroundColor: colors.primaryLight,
+        borderRadius: 4,
+    },
+    retryText: {
+        ...typography.caption,
+        color: colors.primary,
+        fontWeight: '600',
     },
     content: {
         flex: 1,
