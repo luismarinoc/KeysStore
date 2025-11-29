@@ -528,7 +528,7 @@ const styles = StyleSheet.create({
         marginBottom: spacing.m,
         // marginRight: spacing.m, // Removed to fix alignment with space-between
         ...shadows.medium, // Updated shadow
-        borderWidth: 1,
+        borderWidth: 1.5,
         borderColor: colors.border,
         overflow: 'hidden',
         flexDirection: 'row',
