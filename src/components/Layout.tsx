@@ -30,29 +30,29 @@ export const Layout: React.FC<LayoutProps> = ({
         <View style={[styles.container, { paddingTop: insets.top }]}>
             {/* Modern Topbar */}
             <View style={[styles.topbar, isMobile && styles.topbarMobile]}>
-                {/* First Row - Logo and Title */}
-                <View style={[styles.topRow, isMobile && styles.topRowMobile]}>
-                    <View style={styles.leftSection}>
-                        {showBack && (
-                            <TouchableOpacity onPress={onBack} style={styles.backButton}>
-                                <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
-                            </TouchableOpacity>
-                        )}
-                        <View style={styles.logoContainer}>
-                            <View style={styles.logoIcon}>
-                                <Ionicons name="key" size={18} color="#FFF" />
+                {!isMobile ? (
+                    // Desktop: Single row layout (original)
+                    <>
+                        <View style={styles.leftSection}>
+                            {showBack && (
+                                <TouchableOpacity onPress={onBack} style={styles.backButton}>
+                                    <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
+                                </TouchableOpacity>
+                            )}
+                            <View style={styles.logoContainer}>
+                                <View style={styles.logoIcon}>
+                                    <Ionicons name="key" size={18} color="#FFF" />
+                                </View>
+                                <Text style={styles.logoText}>KeyStore</Text>
                             </View>
-                            <Text style={styles.logoText}>KeyStore</Text>
+                            {title && (
+                                <>
+                                    <View style={styles.divider} />
+                                    <Text style={styles.pageTitle}>{title}</Text>
+                                </>
+                            )}
                         </View>
-                        {title && !isMobile && (
-                            <>
-                                <View style={styles.divider} />
-                                <Text style={styles.pageTitle}>{title}</Text>
-                            </>
-                        )}
-                    </View>
 
-                    {!isMobile && (
                         <View style={styles.rightSection}>
                             {actions}
 
@@ -84,47 +84,65 @@ export const Layout: React.FC<LayoutProps> = ({
                                 </View>
                             )}
                         </View>
-                    )}
-                </View>
-
-                {/* Second Row - Mobile Actions */}
-                {isMobile && (
-                    <View style={styles.mobileActionsRow}>
-                        {title && (
-                            <Text style={styles.mobileTitleText}>{title}</Text>
-                        )}
-                        <View style={styles.mobileActionsContainer}>
-                            {actions}
-
-                            {/* Persistent Status Indicator */}
-                            <View style={[styles.statusIndicator, isReadOnlyMode ? styles.statusOffline : styles.statusOnline, styles.statusIndicatorMobile]}>
-                                <View style={[styles.statusDot, styles.statusDotMobile, { backgroundColor: isReadOnlyMode ? colors.danger : colors.success }]} />
-                                <Text style={[styles.statusText, styles.statusTextMobile, { color: isReadOnlyMode ? colors.danger : colors.success }]}>
-                                    {isReadOnlyMode ? 'Sin conexión' : 'Conectado'}
-                                </Text>
-                            </View>
-
-                            {user && (
-                                <View style={styles.userProfile}>
-                                    {user.user_metadata?.avatar_url ? (
-                                        <Image
-                                            source={{ uri: user.user_metadata.avatar_url }}
-                                            style={styles.avatarImage}
-                                        />
-                                    ) : (
-                                        <View style={styles.avatar}>
-                                            <Text style={styles.avatarText}>
-                                                {user.email?.charAt(0).toUpperCase()}
-                                            </Text>
-                                        </View>
-                                    )}
-                                    <TouchableOpacity onPress={signOut} style={styles.logoutButton}>
-                                        <Ionicons name="log-out-outline" size={20} color={colors.textSecondary} />
+                    </>
+                ) : (
+                    // Mobile: Two row layout
+                    <>
+                        {/* First Row - Logo */}
+                        <View style={styles.mobileTopRow}>
+                            <View style={styles.leftSection}>
+                                {showBack && (
+                                    <TouchableOpacity onPress={onBack} style={styles.backButton}>
+                                        <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
                                     </TouchableOpacity>
+                                )}
+                                <View style={styles.logoContainer}>
+                                    <View style={styles.logoIcon}>
+                                        <Ionicons name="key" size={18} color="#FFF" />
+                                    </View>
+                                    <Text style={styles.logoText}>KeyStore</Text>
                                 </View>
-                            )}
+                            </View>
                         </View>
-                    </View>
+
+                        {/* Second Row - Title and Actions */}
+                        <View style={styles.mobileActionsRow}>
+                            {title && (
+                                <Text style={styles.mobileTitleText}>{title}</Text>
+                            )}
+                            <View style={styles.mobileActionsContainer}>
+                                {actions}
+
+                                {/* Persistent Status Indicator */}
+                                <View style={[styles.statusIndicator, isReadOnlyMode ? styles.statusOffline : styles.statusOnline, styles.statusIndicatorMobile]}>
+                                    <View style={[styles.statusDot, styles.statusDotMobile, { backgroundColor: isReadOnlyMode ? colors.danger : colors.success }]} />
+                                    <Text style={[styles.statusText, styles.statusTextMobile, { color: isReadOnlyMode ? colors.danger : colors.success }]}>
+                                        {isReadOnlyMode ? 'Sin conexión' : 'Conectado'}
+                                    </Text>
+                                </View>
+
+                                {user && (
+                                    <View style={styles.userProfile}>
+                                        {user.user_metadata?.avatar_url ? (
+                                            <Image
+                                                source={{ uri: user.user_metadata.avatar_url }}
+                                                style={styles.avatarImage}
+                                            />
+                                        ) : (
+                                            <View style={styles.avatar}>
+                                                <Text style={styles.avatarText}>
+                                                    {user.email?.charAt(0).toUpperCase()}
+                                                </Text>
+                                            </View>
+                                        )}
+                                        <TouchableOpacity onPress={signOut} style={styles.logoutButton}>
+                                            <Ionicons name="log-out-outline" size={20} color={colors.textSecondary} />
+                                        </TouchableOpacity>
+                                    </View>
+                                )}
+                            </View>
+                        </View>
+                    </>
                 )}
             </View>
 
@@ -187,14 +205,11 @@ const styles = StyleSheet.create({
         alignItems: 'stretch',
         paddingHorizontal: spacing.m,
     },
-    topRow: {
+    mobileTopRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
-        minHeight: layout.headerHeight,
-    },
-    topRowMobile: {
         minHeight: 50,
+        paddingVertical: spacing.s,
     },
     mobileActionsRow: {
         flexDirection: 'row',
