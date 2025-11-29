@@ -7,7 +7,7 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "build": "npx expo export --platform web",
+    "build": "npx expo export --platform web && cp -r public/* dist/",
     "preview": "vite preview --host 0.0.0.0 --port 5174"
   },
   "dependencies": {
