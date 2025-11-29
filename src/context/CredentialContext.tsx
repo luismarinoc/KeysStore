@@ -88,7 +88,7 @@ export const CredentialProvider = ({ children }: { children: ReactNode }) => {
 
         // Block in read-only mode
         if (isReadOnlyMode) {
-            Alert.alert('Offline Mode', 'Cannot create credentials while offline. Please connect to the internet.');
+            Alert.alert('Modo sin conexión', 'No se pueden crear credenciales sin conexión. Por favor conecta a internet.');
             return;
         }
 
@@ -186,7 +186,7 @@ export const CredentialProvider = ({ children }: { children: ReactNode }) => {
     const updateCredential = async (id: string, data: Partial<Credential>) => {
         // Block in read-only mode
         if (isReadOnlyMode) {
-            Alert.alert('Offline Mode', 'Cannot update credentials while offline.');
+            Alert.alert('Modo sin conexión', 'No se pueden actualizar credenciales sin conexión.');
             return;
         }
 
@@ -226,7 +226,7 @@ export const CredentialProvider = ({ children }: { children: ReactNode }) => {
     const deleteCredential = async (id: string) => {
         // Block in read-only mode
         if (isReadOnlyMode) {
-            Alert.alert('Offline Mode', 'Cannot delete credentials while offline.');
+            Alert.alert('Modo sin conexión', 'No se pueden eliminar credenciales sin conexión.');
             return;
         }
 

@@ -64,7 +64,7 @@ export const ProjectProvider = ({ children }: { children: ReactNode }) => {
 
         // Block in read-only mode
         if (isReadOnlyMode) {
-            Alert.alert('Offline Mode', 'Cannot create projects while offline. Please connect to the internet.');
+            Alert.alert('Modo sin conexión', 'No se pueden crear proyectos sin conexión. Por favor conecta a internet.');
             return undefined;
         }
 
@@ -123,7 +123,7 @@ export const ProjectProvider = ({ children }: { children: ReactNode }) => {
                 entity: 'project',
                 data: newProject,
             });
-            Alert.alert('Offline', 'Project saved locally. Will sync when connection is restored.');
+            Alert.alert('Sin conexión', 'Proyecto guardado localmente. Se sincronizará cuando se restablezca la conexión.');
         }
 
         return newProject;
@@ -132,7 +132,7 @@ export const ProjectProvider = ({ children }: { children: ReactNode }) => {
     const updateProject = async (id: string, data: Partial<Project>) => {
         // Block in read-only mode
         if (isReadOnlyMode) {
-            Alert.alert('Offline Mode', 'Cannot update projects while offline.');
+            Alert.alert('Modo sin conexión', 'No se pueden actualizar proyectos sin conexión.');
             return;
         }
 
@@ -166,7 +166,7 @@ export const ProjectProvider = ({ children }: { children: ReactNode }) => {
     const deleteProject = async (id: string) => {
         // Block in read-only mode
         if (isReadOnlyMode) {
-            Alert.alert('Offline Mode', 'Cannot delete projects while offline.');
+            Alert.alert('Modo sin conexión', 'No se pueden eliminar proyectos sin conexión.');
             return;
         }
 

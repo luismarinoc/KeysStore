@@ -56,7 +56,7 @@ export const Layout: React.FC<LayoutProps> = ({
                     <View style={[styles.statusIndicator, isReadOnlyMode ? styles.statusOffline : styles.statusOnline]}>
                         <View style={[styles.statusDot, { backgroundColor: isReadOnlyMode ? colors.danger : colors.success }]} />
                         <Text style={[styles.statusText, { color: isReadOnlyMode ? colors.danger : colors.success }]}>
-                            {isReadOnlyMode ? 'Offline' : 'Online'}
+                            {isReadOnlyMode ? 'Sin conexión' : 'Conectado'}
                         </Text>
                     </View>
 
@@ -87,16 +87,16 @@ export const Layout: React.FC<LayoutProps> = ({
                 <View style={styles.offlineBanner}>
                     <Ionicons name="cloud-offline-outline" size={16} color={colors.warning} />
                     <Text style={styles.offlineText}>
-                        Offline Mode - Viewing cached data only
+                        Modo sin conexión - Solo se muestran datos guardados
                     </Text>
                     {lastSyncTime && (
                         <Text style={styles.offlineSubtext}>
-                            Last synced: {new Date(lastSyncTime).toLocaleTimeString()}
+                            Última sincronización: {new Date(lastSyncTime).toLocaleTimeString('es-ES')}
                         </Text>
                     )}
                     <TouchableOpacity onPress={refresh} style={styles.retryButton}>
                         <Ionicons name="refresh-outline" size={14} color={colors.primary} />
-                        <Text style={styles.retryText}>Retry</Text>
+                        <Text style={styles.retryText}>Reintentar</Text>
                     </TouchableOpacity>
                 </View>
             )}
@@ -104,7 +104,7 @@ export const Layout: React.FC<LayoutProps> = ({
             {syncStatus === 'syncing' && (
                 <View style={[styles.offlineBanner, styles.syncingBanner]}>
                     <Ionicons name="sync-outline" size={16} color={colors.primary} />
-                    <Text style={styles.syncingText}>Syncing...</Text>
+                    <Text style={styles.syncingText}>Sincronizando...</Text>
                 </View>
             )}
 
