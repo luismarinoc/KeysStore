@@ -1,12 +1,13 @@
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { Credential } from '../types';
-import { saveCredentials, getCredentials } from '../services/storage';
+import { saveCredentials, getCredentials, addToSyncQueue } from '../services/storage';
 import { supabase } from '../services/supabase';
 import { Alert, Platform } from 'react-native';
 import * as Device from 'expo-device';
 import { encrypt, decrypt } from '../services/encryption';
 import { getClientUUID } from '../services/deviceInfo';
 import { useAuth } from './AuthContext';
+import { useOffline } from './OfflineContext';
 
 interface CredentialContextType {
     credentials: Credential[];
@@ -23,6 +24,7 @@ const CredentialContext = createContext<CredentialContextType | undefined>(undef
 export const CredentialProvider = ({ children }: { children: ReactNode }) => {
     const [credentials, setCredentials] = useState<Credential[]>([]);
     const { user } = useAuth();
+    const { isReadOnlyMode } = useOffline();
 
     useEffect(() => {
         loadCredentials();
@@ -81,6 +83,12 @@ export const CredentialProvider = ({ children }: { children: ReactNode }) => {
     const addCredential = async (data: Omit<Credential, 'id' | 'created_at'>) => {
         if (!user) {
             console.error('User not authenticated');
+            return;
+        }
+
+        // Block in read-only mode
+        if (isReadOnlyMode) {
+            Alert.alert('Offline Mode', 'Cannot create credentials while offline. Please connect to the internet.');
             return;
         }
 
@@ -176,6 +184,12 @@ export const CredentialProvider = ({ children }: { children: ReactNode }) => {
     };
 
     const updateCredential = async (id: string, data: Partial<Credential>) => {
+        // Block in read-only mode
+        if (isReadOnlyMode) {
+            Alert.alert('Offline Mode', 'Cannot update credentials while offline.');
+            return;
+        }
+
         // 1. Update State (Keep sensitive fields DECRYPTED)
         const updatedCredentials = credentials.map((c) => (c.id === id ? { ...c, ...data } : c));
         setCredentials(updatedCredentials);
@@ -210,6 +224,12 @@ export const CredentialProvider = ({ children }: { children: ReactNode }) => {
     };
 
     const deleteCredential = async (id: string) => {
+        // Block in read-only mode
+        if (isReadOnlyMode) {
+            Alert.alert('Offline Mode', 'Cannot delete credentials while offline.');
+            return;
+        }
+
         const updatedCredentials = credentials.filter((c) => c.id !== id);
         setCredentials(updatedCredentials);
 

@@ -1,11 +1,12 @@
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { Project } from '../types';
 import { supabase } from '../services/supabase';
-import { getProjects, saveProjects } from '../services/storage';
+import { getProjects, saveProjects, addToSyncQueue } from '../services/storage';
 import { Alert, Platform } from 'react-native';
 import * as Device from 'expo-device';
 import { getClientUUID } from '../services/deviceInfo';
 import { useAuth } from './AuthContext';
+import { useOffline } from './OfflineContext';
 
 interface ProjectContextType {
     projects: Project[];
@@ -21,6 +22,7 @@ const ProjectContext = createContext<ProjectContextType | undefined>(undefined);
 export const ProjectProvider = ({ children }: { children: ReactNode }) => {
     const [projects, setProjects] = useState<Project[]>([]);
     const { user } = useAuth();
+    const { isReadOnlyMode, isSupabaseAvailable } = useOffline();
 
     useEffect(() => {
         loadProjects();
@@ -60,11 +62,17 @@ export const ProjectProvider = ({ children }: { children: ReactNode }) => {
             return undefined;
         }
 
+        // Block in read-only mode
+        if (isReadOnlyMode) {
+            Alert.alert('Offline Mode', 'Cannot create projects while offline. Please connect to the internet.');
+            return undefined;
+        }
+
         const pcName = user.email || 'Unknown User';
         const apiKey = await getClientUUID();
 
         const newProject: Project = {
-            id: Date.now().toString() + Math.random().toString().slice(2, 5), // Ensure unique ID for rapid adds
+            id: Date.now().toString() + Math.random().toString().slice(2, 5),
             created_at: new Date().toISOString(),
             user_id: user.id,
             pc_name: pcName,
@@ -73,15 +81,14 @@ export const ProjectProvider = ({ children }: { children: ReactNode }) => {
             ...data,
         };
 
-        // Optimistic update using functional state to handle multiple rapid calls
+        // Optimistic update
         setProjects(prevProjects => {
             const updatedProjects = [newProject, ...prevProjects];
-            saveProjects(updatedProjects); // Side effect: save to local storage
+            saveProjects(updatedProjects);
             return updatedProjects;
         });
 
         try {
-            // Prepare data for Supabase with metadata fields
             const supabaseData = {
                 ...data,
                 user_id: user.id,
@@ -98,7 +105,7 @@ export const ProjectProvider = ({ children }: { children: ReactNode }) => {
             if (error) throw error;
 
             if (insertedData) {
-                // Replace temp ID with real ID from server and mark as synced
+                // Replace temp ID with real ID and mark as synced
                 setProjects(prevProjects => {
                     const finalProjects = prevProjects.map(p =>
                         p.id === newProject.id ? { ...insertedData, is_synced: true } : p
@@ -108,18 +115,29 @@ export const ProjectProvider = ({ children }: { children: ReactNode }) => {
                 });
                 return { ...insertedData, is_synced: true };
             }
-        } catch (e) {
-            console.log('Add project error (offline?):', e);
-            // We keep the local version. In a real app, we'd mark it as "unsynced"
-            Alert.alert('Offline', 'Project saved locally. Will sync when online (not implemented yet).');
+        } catch (e: any) {
+            console.log('[ProjectContext] Create failed, queuing for sync:', e.message);
+            // Queue for sync when online
+            await addToSyncQueue({
+                operation: 'create',
+                entity: 'project',
+                data: newProject,
+            });
+            Alert.alert('Offline', 'Project saved locally. Will sync when connection is restored.');
         }
 
         return newProject;
     };
 
     const updateProject = async (id: string, data: Partial<Project>) => {
+        // Block in read-only mode
+        if (isReadOnlyMode) {
+            Alert.alert('Offline Mode', 'Cannot update projects while offline.');
+            return;
+        }
+
         // Optimistic update
-        const updatedProjects = projects.map((p) => (p.id === id ? { ...p, ...data } : p));
+        const updatedProjects = projects.map((p) => (p.id === id ? { ...p, ...data, is_synced: false } : p));
         setProjects(updatedProjects);
         await saveProjects(updatedProjects);
 
@@ -130,12 +148,28 @@ export const ProjectProvider = ({ children }: { children: ReactNode }) => {
                 .eq('id', id);
 
             if (error) throw error;
-        } catch (e) {
-            console.log('Update project error (offline?):', e);
+
+            // Mark as synced
+            const syncedProjects = projects.map((p) => (p.id === id ? { ...p, ...data, is_synced: true } : p));
+            setProjects(syncedProjects);
+            await saveProjects(syncedProjects);
+        } catch (e: any) {
+            console.log('[ProjectContext] Update failed, queuing for sync:', e.message);
+            await addToSyncQueue({
+                operation: 'update',
+                entity: 'project',
+                data: { id, ...data },
+            });
         }
     };
 
     const deleteProject = async (id: string) => {
+        // Block in read-only mode
+        if (isReadOnlyMode) {
+            Alert.alert('Offline Mode', 'Cannot delete projects while offline.');
+            return;
+        }
+
         // Optimistic update
         const updatedProjects = projects.filter((p) => p.id !== id);
         setProjects(updatedProjects);
@@ -149,9 +183,13 @@ export const ProjectProvider = ({ children }: { children: ReactNode }) => {
 
             if (error) throw error;
         } catch (e: any) {
-            console.error('Delete project error:', e);
-            Alert.alert('Delete Failed', `Could not delete project from server: ${e.message || JSON.stringify(e)}`);
-            // Optionally revert state here if strict consistency is needed
+            console.log('[ProjectContext] Delete failed, queuing for sync:', e.message);
+            await addToSyncQueue({
+                operation: 'delete',
+                entity: 'project',
+                data: { id },
+            });
+            Alert.alert('Offline', 'Delete queued. Will sync when connection is restored.');
         }
     };
 
