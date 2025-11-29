@@ -76,7 +76,7 @@ export const Layout: React.FC<LayoutProps> = ({
                                 </View>
                             )}
                             <TouchableOpacity onPress={signOut} style={styles.logoutButton}>
-                                <Ionicons name="log-out-outline" size={isMobile ? 22 : 20} color={colors.textSecondary} />
+                                <Ionicons name="log-out-outline" size={isMobile ? 28 : 20} color={colors.textSecondary} />
                             </TouchableOpacity>
                         </View>
                     )}
