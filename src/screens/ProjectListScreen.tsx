@@ -294,13 +294,13 @@ const ProjectListScreen = () => {
                     style={styles.iconActionButton}
                     onPress={() => navigation.navigate('ProjectForm', { project: item })}
                 >
-                    <Ionicons name="create-outline" size={isMobile ? 28 : 20} color={colors.textSecondary} />
+                    <Ionicons name="create-outline" size={20} color={colors.textSecondary} />
                 </TouchableOpacity>
                 <TouchableOpacity
                     style={styles.iconActionButton}
                     onPress={() => handleDelete(item.id)}
                 >
-                    <Ionicons name="trash-outline" size={isMobile ? 28 : 20} color={colors.danger} />
+                    <Ionicons name="trash-outline" size={20} color={colors.danger} />
                 </TouchableOpacity>
             </View>
         </View>
@@ -311,12 +311,12 @@ const ProjectListScreen = () => {
             title="Proyectos"
             actions={
                 <View style={{ flexDirection: 'row' }}>
-                    <TouchableOpacity onPress={handleImportSapConfig} style={[styles.iconButton, isMobile && styles.iconButtonMobile, { marginRight: 8 }]}>
-                        <Ionicons name="cloud-upload-outline" size={isMobile ? 36 : 20} color={colors.primary} />
+                    <TouchableOpacity onPress={handleImportSapConfig} style={[styles.iconButton, { marginRight: 8 }]}>
+                        <Ionicons name="cloud-upload-outline" size={20} color={colors.primary} />
                     </TouchableOpacity>
                     {projects.length > 0 && (
-                        <TouchableOpacity onPress={handleDeleteAll} style={[styles.iconButton, isMobile && styles.iconButtonMobile]}>
-                            <Ionicons name="trash-outline" size={isMobile ? 36 : 20} color={colors.danger} />
+                        <TouchableOpacity onPress={handleDeleteAll} style={styles.iconButton}>
+                            <Ionicons name="trash-outline" size={20} color={colors.danger} />
                         </TouchableOpacity>
                     )}
                 </View>

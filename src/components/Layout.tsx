@@ -29,58 +29,103 @@ export const Layout: React.FC<LayoutProps> = ({
     return (
         <View style={[styles.container, { paddingTop: insets.top }]}>
             {/* Modern Topbar */}
-            <View style={styles.topbar}>
-                <View style={styles.leftSection}>
-                    {showBack && (
-                        <TouchableOpacity onPress={onBack} style={styles.backButton}>
-                            <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
-                        </TouchableOpacity>
-                    )}
-                    <View style={styles.logoContainer}>
-                        <View style={styles.logoIcon}>
-                            <Ionicons name="key" size={18} color="#FFF" />
+            <View style={[styles.topbar, isMobile && styles.topbarMobile]}>
+                {/* First Row - Logo and Title */}
+                <View style={[styles.topRow, isMobile && styles.topRowMobile]}>
+                    <View style={styles.leftSection}>
+                        {showBack && (
+                            <TouchableOpacity onPress={onBack} style={styles.backButton}>
+                                <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
+                            </TouchableOpacity>
+                        )}
+                        <View style={styles.logoContainer}>
+                            <View style={styles.logoIcon}>
+                                <Ionicons name="key" size={18} color="#FFF" />
+                            </View>
+                            <Text style={styles.logoText}>KeyStore</Text>
                         </View>
-                        <Text style={styles.logoText}>KeyStore</Text>
-                    </View>
-                    {title && (
-                        <>
-                            <View style={styles.divider} />
-                            <Text style={styles.pageTitle}>{title}</Text>
-                        </>
-                    )}
-                </View>
-
-                <View style={styles.rightSection}>
-                    {actions}
-
-                    {/* Persistent Status Indicator */}
-                    <View style={[styles.statusIndicator, isReadOnlyMode ? styles.statusOffline : styles.statusOnline, isMobile && styles.statusIndicatorMobile]}>
-                        <View style={[styles.statusDot, isMobile && styles.statusDotMobile, { backgroundColor: isReadOnlyMode ? colors.danger : colors.success }]} />
-                        <Text style={[styles.statusText, isMobile && styles.statusTextMobile, { color: isReadOnlyMode ? colors.danger : colors.success }]}>
-                            {isReadOnlyMode ? 'Sin conexión' : 'Conectado'}
-                        </Text>
+                        {title && !isMobile && (
+                            <>
+                                <View style={styles.divider} />
+                                <Text style={styles.pageTitle}>{title}</Text>
+                            </>
+                        )}
                     </View>
 
-                    {user && (
-                        <View style={styles.userProfile}>
-                            {user.user_metadata?.avatar_url ? (
-                                <Image
-                                    source={{ uri: user.user_metadata.avatar_url }}
-                                    style={styles.avatarImage}
-                                />
-                            ) : (
-                                <View style={styles.avatar}>
-                                    <Text style={styles.avatarText}>
-                                        {user.email?.charAt(0).toUpperCase()}
-                                    </Text>
+                    {!isMobile && (
+                        <View style={styles.rightSection}>
+                            {actions}
+
+                            {/* Persistent Status Indicator */}
+                            <View style={[styles.statusIndicator, isReadOnlyMode ? styles.statusOffline : styles.statusOnline]}>
+                                <View style={[styles.statusDot, { backgroundColor: isReadOnlyMode ? colors.danger : colors.success }]} />
+                                <Text style={[styles.statusText, { color: isReadOnlyMode ? colors.danger : colors.success }]}>
+                                    {isReadOnlyMode ? 'Sin conexión' : 'Conectado'}
+                                </Text>
+                            </View>
+
+                            {user && (
+                                <View style={styles.userProfile}>
+                                    {user.user_metadata?.avatar_url ? (
+                                        <Image
+                                            source={{ uri: user.user_metadata.avatar_url }}
+                                            style={styles.avatarImage}
+                                        />
+                                    ) : (
+                                        <View style={styles.avatar}>
+                                            <Text style={styles.avatarText}>
+                                                {user.email?.charAt(0).toUpperCase()}
+                                            </Text>
+                                        </View>
+                                    )}
+                                    <TouchableOpacity onPress={signOut} style={styles.logoutButton}>
+                                        <Ionicons name="log-out-outline" size={20} color={colors.textSecondary} />
+                                    </TouchableOpacity>
                                 </View>
                             )}
-                            <TouchableOpacity onPress={signOut} style={styles.logoutButton}>
-                                <Ionicons name="log-out-outline" size={isMobile ? 28 : 20} color={colors.textSecondary} />
-                            </TouchableOpacity>
                         </View>
                     )}
                 </View>
+
+                {/* Second Row - Mobile Actions */}
+                {isMobile && (
+                    <View style={styles.mobileActionsRow}>
+                        {title && (
+                            <Text style={styles.mobileTitleText}>{title}</Text>
+                        )}
+                        <View style={styles.mobileActionsContainer}>
+                            {actions}
+
+                            {/* Persistent Status Indicator */}
+                            <View style={[styles.statusIndicator, isReadOnlyMode ? styles.statusOffline : styles.statusOnline, styles.statusIndicatorMobile]}>
+                                <View style={[styles.statusDot, styles.statusDotMobile, { backgroundColor: isReadOnlyMode ? colors.danger : colors.success }]} />
+                                <Text style={[styles.statusText, styles.statusTextMobile, { color: isReadOnlyMode ? colors.danger : colors.success }]}>
+                                    {isReadOnlyMode ? 'Sin conexión' : 'Conectado'}
+                                </Text>
+                            </View>
+
+                            {user && (
+                                <View style={styles.userProfile}>
+                                    {user.user_metadata?.avatar_url ? (
+                                        <Image
+                                            source={{ uri: user.user_metadata.avatar_url }}
+                                            style={styles.avatarImage}
+                                        />
+                                    ) : (
+                                        <View style={styles.avatar}>
+                                            <Text style={styles.avatarText}>
+                                                {user.email?.charAt(0).toUpperCase()}
+                                            </Text>
+                                        </View>
+                                    )}
+                                    <TouchableOpacity onPress={signOut} style={styles.logoutButton}>
+                                        <Ionicons name="log-out-outline" size={20} color={colors.textSecondary} />
+                                    </TouchableOpacity>
+                                </View>
+                            )}
+                        </View>
+                    </View>
+                )}
             </View>
 
             {/* Connection Status Banner */}
@@ -135,6 +180,41 @@ const styles = StyleSheet.create({
         borderBottomColor: colors.border,
         ...shadows.soft,
         zIndex: 10,
+    },
+    topbarMobile: {
+        height: 'auto',
+        flexDirection: 'column',
+        alignItems: 'stretch',
+        paddingHorizontal: spacing.m,
+    },
+    topRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        minHeight: layout.headerHeight,
+    },
+    topRowMobile: {
+        minHeight: 50,
+    },
+    mobileActionsRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingVertical: spacing.s,
+        borderTopWidth: 1,
+        borderTopColor: colors.border,
+    },
+    mobileTitleText: {
+        ...typography.body,
+        fontWeight: '600',
+        color: colors.textPrimary,
+        flex: 1,
+        marginRight: spacing.m,
+    },
+    mobileActionsContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.s,
     },
     leftSection: {
         flexDirection: 'row',
