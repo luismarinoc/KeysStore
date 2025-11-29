@@ -52,6 +52,14 @@ export const Layout: React.FC<LayoutProps> = ({
                 <View style={styles.rightSection}>
                     {actions}
 
+                    {/* Persistent Status Indicator */}
+                    <View style={[styles.statusIndicator, isReadOnlyMode ? styles.statusOffline : styles.statusOnline]}>
+                        <View style={[styles.statusDot, { backgroundColor: isReadOnlyMode ? colors.danger : colors.success }]} />
+                        <Text style={[styles.statusText, { color: isReadOnlyMode ? colors.danger : colors.success }]}>
+                            {isReadOnlyMode ? 'Offline' : 'Online'}
+                        </Text>
+                    </View>
+
                     {user && (
                         <View style={styles.userProfile}>
                             {user.user_metadata?.avatar_url ? (
@@ -253,5 +261,32 @@ const styles = StyleSheet.create({
         width: '100%',
         maxWidth: layout.maxWidth,
         padding: spacing.l,
+    },
+    statusIndicator: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 12,
+        borderWidth: 1,
+    },
+    statusOnline: {
+        backgroundColor: '#ECFDF5', // Emerald 50
+        borderColor: '#A7F3D0', // Emerald 200
+    },
+    statusOffline: {
+        backgroundColor: '#FEF2F2', // Red 50
+        borderColor: '#FECACA', // Red 200
+    },
+    statusDot: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+    },
+    statusText: {
+        fontSize: 12,
+        fontWeight: '600',
+        fontFamily: typography.fontFamily,
     },
 });
