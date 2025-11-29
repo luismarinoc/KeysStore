@@ -5,7 +5,7 @@ export const colors = {
     surface: '#FFFFFF',
     textPrimary: '#111827', // Gray 900
     textSecondary: '#6B7280', // Gray 500
-    border: '#E5E7EB', // Gray 200
+    border: '#D1D5DB', // Gray 300 (Darker for better visibility)
     danger: '#EF4444', // Red 500
     success: '#10B981', // Emerald 500
     warning: '#F59E0B', // Amber 500
