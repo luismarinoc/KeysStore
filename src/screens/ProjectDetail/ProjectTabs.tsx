@@ -1,6 +1,6 @@
 import React from 'react';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, Modal } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, Modal, Platform } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import * as Clipboard from 'expo-clipboard';
 import { Ionicons } from '@expo/vector-icons';
@@ -13,6 +13,121 @@ import { colors, spacing, typography, shadows, layout } from '../../theme';
 
 type ProjectDetailRouteProp = RouteProp<RootStackParamList, 'ProjectDetail'>;
 type ProjectDetailNavigationProp = NativeStackNavigationProp<RootStackParamList, 'ProjectDetail'>;
+
+const CredentialItem = ({
+    item,
+    onDelete,
+    navigation,
+    copyToClipboard
+}: {
+    item: Credential;
+    onDelete: (id: string) => void;
+    navigation: any;
+    copyToClipboard: (text: string, label: string) => void;
+}) => {
+    const [showPassword, setShowPassword] = React.useState(false);
+
+    // Determine icon based on category/type
+    let iconName: keyof typeof Ionicons.glyphMap = 'key-outline';
+    if (item.tab_category === 'WIFI') iconName = 'wifi';
+    else if (item.tab_category === 'VPN') iconName = 'shield-checkmark-outline';
+    else if (item.tab_category === 'NOTE') iconName = 'document-text-outline';
+    else if (item.tab_category === 'APP') iconName = 'server-outline';
+
+    // Determine environment color
+    const envColor = item.environment && item.environment !== 'NONE'
+        ? colors.env[item.environment]
+        : colors.env.NONE;
+
+    return (
+        <View style={[styles.card, { borderColor: envColor.border }]}>
+            <TouchableOpacity
+                style={styles.cardContent}
+                onPress={() => navigation.navigate('CredentialForm', { credential: item })}
+            >
+                <View style={styles.cardHeader}>
+                    <View style={[styles.iconContainer, { backgroundColor: envColor.bg }]}>
+                        <Ionicons name={iconName} size={20} color={envColor.text} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                        <Text style={styles.cardTitle}>{item.title}</Text>
+                        <View style={styles.badgesContainer}>
+                            {item.environment && item.environment !== 'NONE' && (
+                                <View style={[styles.pill, { backgroundColor: envColor.bg, borderColor: envColor.border }]}>
+                                    <Text style={[styles.pillText, { color: envColor.text }]}>{item.environment}</Text>
+                                </View>
+                            )}
+                            {item.instance_number && (
+                                <View style={styles.pill}>
+                                    <Text style={styles.pillText}>Inst: {item.instance_number}</Text>
+                                </View>
+                            )}
+                            {item.mandt && (
+                                <View style={styles.pill}>
+                                    <Text style={styles.pillText}>Mandt: {item.mandt}</Text>
+                                </View>
+                            )}
+                        </View>
+                    </View>
+                    <Ionicons
+                        name={item.is_synced ? "checkmark-circle" : "cloud-upload-outline"}
+                        size={18}
+                        color={item.is_synced ? colors.success : colors.warning}
+                        style={{ marginLeft: 8 }}
+                    />
+                </View>
+
+                {item.note_content && item.tab_category === 'NOTE' ? (
+                    <Text style={styles.notePreview} numberOfLines={3}>
+                        {item.note_content}
+                    </Text>
+                ) : (
+                    <View style={styles.detailsContainer}>
+                        {item.username && (
+                            <View style={styles.detailRow}>
+                                <Ionicons name="person-outline" size={14} color={colors.textSecondary} />
+                                <Text style={styles.detailText}>{item.username}</Text>
+                                <TouchableOpacity onPress={() => copyToClipboard(item.username!, 'Username')} style={styles.copyButton}>
+                                    <Ionicons name="copy-outline" size={14} color={colors.primary} />
+                                </TouchableOpacity>
+                            </View>
+                        )}
+
+                        {/* Password Field */}
+                        {item.password_encrypted && (
+                            <View style={styles.detailRow}>
+                                <Ionicons name="lock-closed-outline" size={14} color={colors.textSecondary} />
+                                <Text style={[styles.detailText, { fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace' }]}>
+                                    {showPassword ? item.password_encrypted : '••••••••'}
+                                </Text>
+                                <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.copyButton}>
+                                    <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={14} color={colors.textSecondary} />
+                                </TouchableOpacity>
+                                <TouchableOpacity onPress={() => copyToClipboard(item.password_encrypted!, 'Password')} style={styles.copyButton}>
+                                    <Ionicons name="copy-outline" size={14} color={colors.primary} />
+                                </TouchableOpacity>
+                            </View>
+                        )}
+
+                        {item.host_address && (
+                            <View style={styles.detailRow}>
+                                <Ionicons name="desktop-outline" size={14} color={colors.textSecondary} />
+                                <Text style={styles.detailText}>{item.host_address}</Text>
+                                <TouchableOpacity onPress={() => copyToClipboard(item.host_address!, 'Host')} style={styles.copyButton}>
+                                    <Ionicons name="copy-outline" size={14} color={colors.primary} />
+                                </TouchableOpacity>
+                            </View>
+                        )}
+                    </View>
+                )}
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.deleteButton} onPress={() => onDelete(item.id)}>
+                <Ionicons name="trash-outline" size={20} color={colors.danger} />
+            </TouchableOpacity>
+        </View>
+    );
+};
 
 const CredentialList = ({ category, environment, projectId }: { category: TabCategory; environment?: Environment; projectId: string }) => {
     const navigation = useNavigation<ProjectDetailNavigationProp>();
@@ -46,88 +161,13 @@ const CredentialList = ({ category, environment, projectId }: { category: TabCat
     };
 
     const renderItem = ({ item }: { item: Credential }) => {
-        // Determine icon based on category/type
-        let iconName: keyof typeof Ionicons.glyphMap = 'key-outline';
-        if (item.tab_category === 'WIFI') iconName = 'wifi';
-        else if (item.tab_category === 'VPN') iconName = 'shield-checkmark-outline';
-        else if (item.tab_category === 'NOTE') iconName = 'document-text-outline';
-        else if (item.tab_category === 'APP') iconName = 'server-outline';
-
-        // Determine environment color
-        const envColor = item.environment && item.environment !== 'NONE'
-            ? colors.env[item.environment]
-            : colors.env.NONE;
-
         return (
-            <View style={[styles.card, { borderColor: envColor.border }]}>
-                <TouchableOpacity
-                    style={styles.cardContent}
-                    onPress={() => navigation.navigate('CredentialForm', { credential: item })}
-                >
-                    <View style={styles.cardHeader}>
-                        <View style={[styles.iconContainer, { backgroundColor: envColor.bg }]}>
-                            <Ionicons name={iconName} size={20} color={envColor.text} />
-                        </View>
-                        <View style={{ flex: 1 }}>
-                            <Text style={styles.cardTitle}>{item.title}</Text>
-                            <View style={styles.badgesContainer}>
-                                {item.environment && item.environment !== 'NONE' && (
-                                    <View style={[styles.pill, { backgroundColor: envColor.bg, borderColor: envColor.border }]}>
-                                        <Text style={[styles.pillText, { color: envColor.text }]}>{item.environment}</Text>
-                                    </View>
-                                )}
-                                {item.instance_number && (
-                                    <View style={styles.pill}>
-                                        <Text style={styles.pillText}>Inst: {item.instance_number}</Text>
-                                    </View>
-                                )}
-                                {item.mandt && (
-                                    <View style={styles.pill}>
-                                        <Text style={styles.pillText}>Mandt: {item.mandt}</Text>
-                                    </View>
-                                )}
-                            </View>
-                        </View>
-                        <Ionicons
-                            name={item.is_synced ? "checkmark-circle" : "cloud-upload-outline"}
-                            size={18}
-                            color={item.is_synced ? colors.success : colors.warning}
-                            style={{ marginLeft: 8 }}
-                        />
-                    </View>
-
-                    {item.note_content && item.tab_category === 'NOTE' ? (
-                        <Text style={styles.notePreview} numberOfLines={3}>
-                            {item.note_content}
-                        </Text>
-                    ) : (
-                        <View style={styles.detailsContainer}>
-                            {item.username && (
-                                <View style={styles.detailRow}>
-                                    <Ionicons name="person-outline" size={14} color={colors.textSecondary} />
-                                    <Text style={styles.detailText}>{item.username}</Text>
-                                    <TouchableOpacity onPress={() => copyToClipboard(item.username!, 'Username')} style={styles.copyButton}>
-                                        <Ionicons name="copy-outline" size={14} color={colors.primary} />
-                                    </TouchableOpacity>
-                                </View>
-                            )}
-                            {item.host_address && (
-                                <View style={styles.detailRow}>
-                                    <Ionicons name="desktop-outline" size={14} color={colors.textSecondary} />
-                                    <Text style={styles.detailText}>{item.host_address}</Text>
-                                    <TouchableOpacity onPress={() => copyToClipboard(item.host_address!, 'Host')} style={styles.copyButton}>
-                                        <Ionicons name="copy-outline" size={14} color={colors.primary} />
-                                    </TouchableOpacity>
-                                </View>
-                            )}
-                        </View>
-                    )}
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.deleteButton} onPress={() => handleDelete(item.id)}>
-                    <Ionicons name="trash-outline" size={20} color={colors.danger} />
-                </TouchableOpacity>
-            </View>
+            <CredentialItem
+                item={item}
+                onDelete={handleDelete}
+                navigation={navigation}
+                copyToClipboard={copyToClipboard}
+            />
         );
     };
 
