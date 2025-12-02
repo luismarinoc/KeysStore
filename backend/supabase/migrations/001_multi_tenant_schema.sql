@@ -58,13 +58,17 @@ CREATE POLICY "Users can view organizations they belong to" ON organizations
 CREATE POLICY "Users can create organizations" ON organizations
     FOR INSERT WITH CHECK (true); -- Allow creation, trigger handles membership
 
--- Organization Members
+-- Organization Members (Fixed to avoid recursion)
 CREATE POLICY "Users can view members of their organizations" ON organization_members
     FOR SELECT USING (
-        EXISTS (
-            SELECT 1 FROM organization_members om
-            WHERE om.organization_id = organization_members.organization_id
-            AND om.user_id = auth.uid()
+        -- User can see their own membership
+        user_id = auth.uid()
+        OR
+        -- Or if they belong to the same organization
+        organization_id IN (
+            SELECT om.organization_id 
+            FROM organization_members om
+            WHERE om.user_id = auth.uid()
         )
     );
 
