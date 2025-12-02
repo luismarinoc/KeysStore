@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getDataStore, getSupabase } from '@keysstore/sdk-client'
+import { getSupabase } from '@keysstore/sdk-client'
 import type { Organization } from '@keysstore/shared-types'
 import { OrganizationSelector } from './components/OrganizationSelector'
 import './App.css'
